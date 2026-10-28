@@ -293,13 +293,11 @@ const INITIAL_DB = {
     sede: 'Valcheta, Río Negro',
     // Usuario Administrador
     adminUser: 'admin',
-    adminPass: 'Admin123@',
     // Usuario Entrenador (Renglón 19 de la Nómina Inicial)
     entrenador: 'Cristian Javier Torres',
     entrenadorDni: '27.884.821',
     entrenadorFechaNacimiento: '1980-07-02',
     coachUser: 'cristian.torres',
-    coachPass: '27884821',
   },
   semanaActual: getCurrentWeekISO(HOY_DEFAULT),
   distanciasRanking: DEFAULT_DISTANCIAS_RANKING,
@@ -313,7 +311,6 @@ const INITIAL_DB = {
       apellido: 'Rivas Abrate',
       dni: '50.744.971',
       usuario: 'alejo.rivas',
-      password: '50744971',
       fechaNacimiento: '2011-02-07',
       genero: 'M',
       categoria: 'U16',
@@ -327,7 +324,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.rivas',
-        password: '50744971',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -346,7 +342,6 @@ const INITIAL_DB = {
       apellido: 'Guenumil',
       dni: '47.914.403',
       usuario: 'valentina.guenumil',
-      password: '47914403',
       fechaNacimiento: '2007-02-28',
       genero: 'F',
       categoria: 'U20',
@@ -372,7 +367,6 @@ const INITIAL_DB = {
       apellido: 'Cayún',
       dni: '52.322.748',
       usuario: 'nicolas.cayun',
-      password: '52322748',
       fechaNacimiento: '2012-04-22',
       genero: 'M',
       categoria: 'U16',
@@ -386,7 +380,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.cayun',
-        password: '52322748',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -405,7 +398,6 @@ const INITIAL_DB = {
       apellido: 'Ostertag',
       dni: '52.328.278',
       usuario: 'rocio.ostertag',
-      password: '52328278',
       fechaNacimiento: '2012-10-16',
       genero: 'F',
       categoria: 'U16',
@@ -419,7 +411,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.ostertag',
-        password: '52328278',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -438,7 +429,6 @@ const INITIAL_DB = {
       apellido: 'Albatte Cañoel',
       dni: '52.325.514',
       usuario: 'keyla.albatte',
-      password: '52325514',
       fechaNacimiento: '2011-08-04',
       genero: 'F',
       categoria: 'U16',
@@ -452,7 +442,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.albatte',
-        password: '52325514',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -471,8 +460,6 @@ const INITIAL_DB = {
       apellido: 'Yanca Paillalef',
       dni: '53.352.267',
       usuario: 'jonas.yanca',
-      password: '53352267',
-      altPasswords: ['53392267'],
       fechaNacimiento: '2013-08-30',
       genero: 'M',
       categoria: 'U14',
@@ -486,7 +473,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.yanca',
-        password: '53352267',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -505,7 +491,6 @@ const INITIAL_DB = {
       apellido: 'Ghezzi',
       dni: '50.208.984',
       usuario: 'mauro.ghezzi',
-      password: '50208984',
       fechaNacimiento: '2010-05-04',
       genero: 'M',
       categoria: 'U18',
@@ -519,7 +504,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.ghezzi',
-        password: '50208984',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -538,7 +522,6 @@ const INITIAL_DB = {
       apellido: 'Chico',
       dni: '53.014.584',
       usuario: 'lucila.chico',
-      password: '53014584',
       fechaNacimiento: '2013-05-28',
       genero: 'F',
       categoria: 'U14',
@@ -552,7 +535,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.chico',
-        password: '53014584',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -571,7 +553,6 @@ const INITIAL_DB = {
       apellido: 'Quiroga Casas',
       dni: '52.320.548',
       usuario: 'eluney.quiroga',
-      password: '52320548',
       fechaNacimiento: '2012-04-28',
       genero: 'F',
       categoria: 'U16',
@@ -585,7 +566,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.quiroga',
-        password: '52320548',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -605,8 +585,6 @@ const INITIAL_DB = {
       dni: '53.014.585',
       usuario: 'rebea.catriel',
       altUsuarios: ['rebeca.catriel'],
-      password: '53014585',
-      altPasswords: ['53014595'],
       fechaNacimiento: '2013-07-16',
       genero: 'F',
       categoria: 'U14',
@@ -620,7 +598,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.catriel',
-        password: '53014585',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -639,7 +616,6 @@ const INITIAL_DB = {
       apellido: 'Mortada',
       dni: '51.237.336',
       usuario: 'ian.mortada',
-      password: '51237336',
       fechaNacimiento: '2011-08-09',
       genero: 'M',
       categoria: 'U16',
@@ -653,7 +629,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.mortada',
-        password: '51237336',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -672,7 +647,6 @@ const INITIAL_DB = {
       apellido: 'Marileo',
       dni: '53.015.898',
       usuario: 'santiago.marileo',
-      password: '53015898',
       fechaNacimiento: '2013-04-28',
       genero: 'M',
       categoria: 'U14',
@@ -686,7 +660,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.marileo',
-        password: '53015898',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -705,7 +678,6 @@ const INITIAL_DB = {
       apellido: 'Zapata',
       dni: '51.033.277',
       usuario: 'tiziana.zapata',
-      password: '51033277',
       fechaNacimiento: '2011-08-04',
       genero: 'F',
       categoria: 'U16',
@@ -719,7 +691,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.zapata',
-        password: '51033277',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -738,7 +709,6 @@ const INITIAL_DB = {
       apellido: 'Quilográn Cerdan',
       dni: '51.237.348',
       usuario: 'jazmin.quilogran',
-      password: '51237348',
       fechaNacimiento: '2011-09-19',
       genero: 'F',
       categoria: 'U16',
@@ -752,7 +722,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.quilogran',
-        password: '51237348',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -771,7 +740,6 @@ const INITIAL_DB = {
       apellido: 'Furlan',
       dni: '50.432.052',
       usuario: 'lucas.furlan',
-      password: '50432052',
       fechaNacimiento: '2010-07-12',
       genero: 'M',
       categoria: 'U18',
@@ -785,7 +753,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.furlan',
-        password: '50432052',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -805,7 +772,6 @@ const INITIAL_DB = {
       dni: '53.014.587',
       usuario: 'malena.bahamonde',
       altUsuarios: ['malena.uircain'],
-      password: '53014587',
       fechaNacimiento: '2013-06-05',
       genero: 'F',
       categoria: 'U14',
@@ -820,7 +786,6 @@ const INITIAL_DB = {
         email: '',
         usuario: 'familia.bahamonde',
         altUsuarios: ['familia.uircain'],
-        password: '53014587',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -839,7 +804,6 @@ const INITIAL_DB = {
       apellido: 'Liendaf',
       dni: '58.258.987',
       usuario: 'aylen.liendaf',
-      password: '58258987',
       fechaNacimiento: '2020-07-14',
       genero: 'F',
       categoria: 'Infantiles',
@@ -853,7 +817,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.liendaf',
-        password: '58258987',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -872,7 +835,6 @@ const INITIAL_DB = {
       apellido: 'Torres Abrate',
       dni: '58.411.599',
       usuario: 'amelia.torres',
-      password: '58411599',
       fechaNacimiento: '2021-03-18',
       genero: 'F',
       categoria: 'Infantiles',
@@ -886,7 +848,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.torres',
-        password: '58411599',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -905,7 +866,6 @@ const INITIAL_DB = {
       apellido: 'Yanca Paillalef',
       dni: '58.041.012',
       usuario: 'luis.yanca',
-      password: '58041012',
       fechaNacimiento: '2020-09-03',
       genero: 'M',
       categoria: 'Infantiles',
@@ -919,7 +879,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.yanca',
-        password: '58041012',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -938,7 +897,6 @@ const INITIAL_DB = {
       apellido: 'Cariman',
       dni: '58.409.181',
       usuario: 'gabriel.cariman',
-      password: '58409181',
       fechaNacimiento: '2020-11-05',
       genero: 'M',
       categoria: 'Infantiles',
@@ -952,7 +910,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.cariman',
-        password: '58409181',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -971,7 +928,6 @@ const INITIAL_DB = {
       apellido: 'Quichan',
       dni: '58.410.827',
       usuario: 'mateo.quichan',
-      password: '58410827',
       fechaNacimiento: '2020-08-30',
       genero: 'M',
       categoria: 'Infantiles',
@@ -985,7 +941,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.quichan',
-        password: '58410827',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1004,7 +959,6 @@ const INITIAL_DB = {
       apellido: 'Quidel',
       dni: '58.260.027',
       usuario: 'clara.quidel',
-      password: '58260027',
       fechaNacimiento: '2020-05-15',
       genero: 'F',
       categoria: 'Infantiles',
@@ -1018,7 +972,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.quidel',
-        password: '58260027',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1037,7 +990,6 @@ const INITIAL_DB = {
       apellido: 'Walter',
       dni: '57.806.066',
       usuario: 'ihan.walter',
-      password: '57806066',
       fechaNacimiento: '2019-10-24',
       genero: 'M',
       categoria: 'Infantiles',
@@ -1051,7 +1003,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.walter',
-        password: '57806066',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1070,7 +1021,6 @@ const INITIAL_DB = {
       apellido: 'Quiroga Casas',
       dni: '58.410.709',
       usuario: 'aylen.quiroga',
-      password: '58410709',
       fechaNacimiento: '2020-10-09',
       genero: 'F',
       categoria: 'Infantiles',
@@ -1084,7 +1034,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.quiroga',
-        password: '58410709',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1103,7 +1052,6 @@ const INITIAL_DB = {
       apellido: 'Cañulef Fernández',
       dni: '57.492.789',
       usuario: 'cristal.canulef',
-      password: '57492789',
       fechaNacimiento: '2019-03-06',
       genero: 'F',
       categoria: 'Infantiles',
@@ -1117,7 +1065,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.canulef',
-        password: '57492789',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1136,7 +1083,6 @@ const INITIAL_DB = {
       apellido: 'Morales',
       dni: '58.042.149',
       usuario: 'jazmin.morales',
-      password: '58042149',
       fechaNacimiento: '2020-01-31',
       genero: 'F',
       categoria: 'Infantiles',
@@ -1150,7 +1096,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.morales',
-        password: '58042149',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1169,7 +1114,6 @@ const INITIAL_DB = {
       apellido: 'Escobar Hernández',
       dni: '57.806.430',
       usuario: 'ignacio.escobar',
-      password: '57806430',
       fechaNacimiento: '2019-12-15',
       genero: 'M',
       categoria: 'Infantiles',
@@ -1183,7 +1127,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.escobar',
-        password: '57806430',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1202,7 +1145,6 @@ const INITIAL_DB = {
       apellido: 'Gutiérrez Contrera',
       dni: '58.042.772',
       usuario: 'noah.gutierrez',
-      password: '58042772',
       fechaNacimiento: '2020-04-01',
       genero: 'M',
       categoria: 'Infantiles',
@@ -1216,7 +1158,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.gutierrez',
-        password: '58042772',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1235,7 +1176,6 @@ const INITIAL_DB = {
       apellido: 'Wuchal',
       dni: '56.984.218',
       usuario: 'tomas.wuchal',
-      password: '56984218',
       fechaNacimiento: '2018-08-18',
       genero: 'M',
       categoria: 'Infantiles',
@@ -1249,7 +1189,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.wuchal',
-        password: '56984218',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1268,7 +1207,6 @@ const INITIAL_DB = {
       apellido: 'Martínez',
       dni: '57.649.809',
       usuario: 'almendra.martinez',
-      password: '57649809',
       fechaNacimiento: '2019-05-17',
       genero: 'F',
       categoria: 'Infantiles',
@@ -1282,7 +1220,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.martinez',
-        password: '57649809',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1301,7 +1238,6 @@ const INITIAL_DB = {
       apellido: 'Capristo Páez',
       dni: '56.983.279',
       usuario: 'eluney.capristo',
-      password: '56983279',
       fechaNacimiento: '2018-08-17',
       genero: 'F',
       categoria: 'Infantiles',
@@ -1315,7 +1251,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.capristo',
-        password: '56983279',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1334,7 +1269,6 @@ const INITIAL_DB = {
       apellido: 'Enchuleo',
       dni: '57.191.105',
       usuario: 'victoria.enchuleo',
-      password: '57191105',
       fechaNacimiento: '2019-01-08',
       genero: 'F',
       categoria: 'Infantiles',
@@ -1348,7 +1282,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.enchuleo',
-        password: '57191105',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1367,7 +1300,6 @@ const INITIAL_DB = {
       apellido: 'Ghezzi',
       dni: '56.984.211',
       usuario: 'mirela.ghezzi',
-      password: '56984211',
       fechaNacimiento: '2018-06-27',
       genero: 'F',
       categoria: 'Infantiles',
@@ -1381,7 +1313,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.ghezzi',
-        password: '56984211',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1400,7 +1331,6 @@ const INITIAL_DB = {
       apellido: 'Montelpare Amaya',
       dni: '57.191.650',
       usuario: 'gino.montelpare',
-      password: '57191650',
       fechaNacimiento: '2019-01-22',
       genero: 'M',
       categoria: 'Infantiles',
@@ -1414,7 +1344,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.montelpare',
-        password: '57191650',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1433,7 +1362,6 @@ const INITIAL_DB = {
       apellido: 'Ríos',
       dni: '57.371.046',
       usuario: 'natanael.rios',
-      password: '57371046',
       fechaNacimiento: '2019-04-01',
       genero: 'M',
       categoria: 'Infantiles',
@@ -1447,7 +1375,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.rios',
-        password: '57371046',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1466,7 +1393,6 @@ const INITIAL_DB = {
       apellido: 'Cabezas Morandín',
       dni: '56.606.312',
       usuario: 'pablo.cabezas',
-      password: '56606312',
       fechaNacimiento: '2018-02-04',
       genero: 'M',
       categoria: 'Infantiles',
@@ -1480,7 +1406,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.cabezas',
-        password: '56606312',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1499,7 +1424,6 @@ const INITIAL_DB = {
       apellido: 'Cuñiquir',
       dni: '56.420.712',
       usuario: 'mia.cuniquir',
-      password: '56420712',
       fechaNacimiento: '2017-11-28',
       genero: 'F',
       categoria: 'Infantiles',
@@ -1513,7 +1437,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.cuniquir',
-        password: '56420712',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1532,7 +1455,6 @@ const INITIAL_DB = {
       apellido: 'Martínez',
       dni: '56.421.465',
       usuario: 'agostina.martinez',
-      password: '56421465',
       fechaNacimiento: '2017-10-08',
       genero: 'F',
       categoria: 'Infantiles',
@@ -1546,7 +1468,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.martinez',
-        password: '56421465',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1565,7 +1486,6 @@ const INITIAL_DB = {
       apellido: 'Zapata Rodríguez',
       dni: '56.606.702',
       usuario: 'sofia.zapata',
-      password: '56606702',
       fechaNacimiento: '2018-01-21',
       genero: 'F',
       categoria: 'Infantiles',
@@ -1579,7 +1499,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.zapata',
-        password: '56606702',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1598,7 +1517,6 @@ const INITIAL_DB = {
       apellido: 'Muller',
       dni: '56.605.444',
       usuario: 'juana.muller',
-      password: '56605444',
       fechaNacimiento: '2017-12-24',
       genero: 'F',
       categoria: 'Infantiles',
@@ -1612,7 +1530,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.muller',
-        password: '56605444',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1631,7 +1548,6 @@ const INITIAL_DB = {
       apellido: 'Manqueo Monsalve',
       dni: '56.846.303',
       usuario: 'yuri.manqueo',
-      password: '56846303',
       fechaNacimiento: '2018-03-27',
       genero: 'F',
       categoria: 'Infantiles',
@@ -1645,7 +1561,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.manqueo',
-        password: '56846303',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1664,7 +1579,6 @@ const INITIAL_DB = {
       apellido: 'Ríos',
       dni: '56.846.304',
       usuario: 'martin.rios',
-      password: '56846304',
       fechaNacimiento: '2018-04-06',
       genero: 'M',
       categoria: 'Infantiles',
@@ -1678,7 +1592,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.rios',
-        password: '56846304',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1697,7 +1610,6 @@ const INITIAL_DB = {
       apellido: 'Martínez',
       dni: '56.846.309',
       usuario: 'fernando.martinez',
-      password: '56846309',
       fechaNacimiento: '2018-04-02',
       genero: 'M',
       categoria: 'Infantiles',
@@ -1711,7 +1623,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.martinez',
-        password: '56846309',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1730,7 +1641,6 @@ const INITIAL_DB = {
       apellido: 'Wuchal',
       dni: '55.847.308',
       usuario: 'sofia.wuchal',
-      password: '55847308',
       fechaNacimiento: '2016-12-18',
       genero: 'F',
       categoria: 'Infantiles',
@@ -1744,7 +1654,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.wuchal',
-        password: '55847308',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1763,8 +1672,6 @@ const INITIAL_DB = {
       apellido: 'Gómez',
       dni: '55.649.470',
       usuario: 'ciro.gomez',
-      password: '55649470',
-      altPasswords: ['556494704'],
       fechaNacimiento: '2016-09-09',
       genero: 'M',
       categoria: 'Infantiles',
@@ -1778,7 +1685,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.gomez',
-        password: '55649470',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1797,7 +1703,6 @@ const INITIAL_DB = {
       apellido: 'Corribolo Casas',
       dni: '55.647.453',
       usuario: 'lua.corribolo',
-      password: '55647453',
       fechaNacimiento: '2016-07-19',
       genero: 'F',
       categoria: 'U12',
@@ -1811,7 +1716,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.corribolo',
-        password: '55647453',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1830,7 +1734,6 @@ const INITIAL_DB = {
       apellido: 'Navelfil',
       dni: '56.419.772',
       usuario: 'gianella.navelfil',
-      password: '56419772',
       fechaNacimiento: '2016-08-05',
       genero: 'F',
       categoria: 'U12',
@@ -1844,7 +1747,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.navelfil',
-        password: '56419772',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1863,7 +1765,6 @@ const INITIAL_DB = {
       apellido: 'Ramos',
       dni: '56.213.132',
       usuario: 'nahiely.ramos',
-      password: '56213132',
       fechaNacimiento: '2017-04-30',
       genero: 'F',
       categoria: 'Infantiles',
@@ -1877,7 +1778,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.ramos',
-        password: '56213132',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1896,7 +1796,6 @@ const INITIAL_DB = {
       apellido: 'Yáñez Millaleo',
       dni: '55.649.462',
       usuario: 'ulises.yanez',
-      password: '55649462',
       fechaNacimiento: '2016-09-03',
       genero: 'M',
       categoria: 'U12',
@@ -1910,7 +1809,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.yanez',
-        password: '55649462',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1929,7 +1827,6 @@ const INITIAL_DB = {
       apellido: 'Zapata',
       dni: '54.399.656',
       usuario: 'maximiliano.zapata',
-      password: '54399656',
       fechaNacimiento: '2015-05-06',
       genero: 'M',
       categoria: 'U12',
@@ -1943,7 +1840,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.zapata',
-        password: '54399656',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1962,7 +1858,6 @@ const INITIAL_DB = {
       apellido: 'Godoy Painemal',
       dni: '55.090.524',
       usuario: 'luca.godoy',
-      password: '55090524',
       fechaNacimiento: '2015-12-19',
       genero: 'M',
       categoria: 'U12',
@@ -1976,7 +1871,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.godoy',
-        password: '55090524',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -1995,7 +1889,6 @@ const INITIAL_DB = {
       apellido: 'Otero Coñoel',
       dni: '54.943.724',
       usuario: 'amina.otero',
-      password: '54943724',
       fechaNacimiento: '2015-09-17',
       genero: 'F',
       categoria: 'U12',
@@ -2009,7 +1902,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.otero',
-        password: '54943724',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -2028,7 +1920,6 @@ const INITIAL_DB = {
       apellido: 'Alles García',
       dni: '55.090.915',
       usuario: 'catalina.alles',
-      password: '55090915',
       fechaNacimiento: '2016-01-13',
       genero: 'F',
       categoria: 'U12',
@@ -2042,7 +1933,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.alles',
-        password: '55090915',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -2061,7 +1951,6 @@ const INITIAL_DB = {
       apellido: 'Escuer',
       dni: '54.941.537',
       usuario: 'jonas.escuer',
-      password: '54941537',
       fechaNacimiento: '2015-07-14',
       genero: 'M',
       categoria: 'U12',
@@ -2075,7 +1964,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.escuer',
-        password: '54941537',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -2094,7 +1982,6 @@ const INITIAL_DB = {
       apellido: 'Rivas Abrate',
       dni: '54.943.728',
       usuario: 'aymara.rivas',
-      password: '54943728',
       fechaNacimiento: '2015-11-06',
       genero: 'F',
       categoria: 'U12',
@@ -2108,7 +1995,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.rivas',
-        password: '54943728',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -2127,7 +2013,6 @@ const INITIAL_DB = {
       apellido: 'Navelfil',
       dni: '55.303.425',
       usuario: 'alisa.navelfil',
-      password: '55303425',
       fechaNacimiento: '2016-03-17',
       genero: 'F',
       categoria: 'U12',
@@ -2141,7 +2026,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.navelfil',
-        password: '55303425',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -2160,7 +2044,6 @@ const INITIAL_DB = {
       apellido: 'Albornoz',
       dni: '55.462.108',
       usuario: 'thiago.albornoz',
-      password: '55462108',
       fechaNacimiento: '2016-04-18',
       genero: 'M',
       categoria: 'U12',
@@ -2174,7 +2057,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.albornoz',
-        password: '55462108',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -2193,7 +2075,6 @@ const INITIAL_DB = {
       apellido: 'Rosa Cariman',
       dni: '54.774.237',
       usuario: 'debora.rosa',
-      password: '54774237',
       fechaNacimiento: '2015-07-27',
       genero: 'F',
       categoria: 'U12',
@@ -2207,7 +2088,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.rosa',
-        password: '54774237',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -2226,7 +2106,6 @@ const INITIAL_DB = {
       apellido: 'Colihuinca',
       dni: '54.943.723',
       usuario: 'luciel.colihuinca',
-      password: '54943723',
       fechaNacimiento: '2015-08-31',
       genero: 'M',
       categoria: 'U12',
@@ -2240,7 +2119,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.colihuinca',
-        password: '54943723',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -2259,7 +2137,6 @@ const INITIAL_DB = {
       apellido: 'Arden Van Der Sandt',
       dni: '54.772.551',
       usuario: 'nadide.arden',
-      password: '54772551',
       fechaNacimiento: '2015-04-17',
       genero: 'F',
       categoria: 'U12',
@@ -2273,7 +2150,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.arden',
-        password: '54772551',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -2292,7 +2168,6 @@ const INITIAL_DB = {
       apellido: 'Uircain Burriel',
       dni: '53.615.914',
       usuario: 'juan.uircain',
-      password: '53615914',
       fechaNacimiento: '2014-04-09',
       genero: 'M',
       categoria: 'U12',
@@ -2306,7 +2181,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.uircain',
-        password: '53615914',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -2325,7 +2199,6 @@ const INITIAL_DB = {
       apellido: 'Railef Benavídez',
       dni: '54.090.153',
       usuario: 'maia.railef',
-      password: '54090153',
       fechaNacimiento: '2014-08-19',
       genero: 'F',
       categoria: 'U12',
@@ -2339,7 +2212,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.railef',
-        password: '54090153',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -2358,7 +2230,6 @@ const INITIAL_DB = {
       apellido: 'Pérez Millaqueo',
       dni: '53.615.924',
       usuario: 'thiago.perez',
-      password: '53615924',
       fechaNacimiento: '2014-05-01',
       genero: 'M',
       categoria: 'U12',
@@ -2372,7 +2243,6 @@ const INITIAL_DB = {
         vinculo: 'Tutor/a',
         email: '',
         usuario: 'familia.perez',
-        password: '53615924',
       },
       ingreso: '2026-03-01',
       antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -2603,6 +2473,28 @@ function migrarAtletaIdsAOpace(dbObj) {
 window.migrarAtletaIdsAOpace = migrarAtletaIdsAOpace;
 
 /* ---------- Carga Inicial con Aislamiento Seguro ---------- */
+
+/* ---------- Sanitización de Credenciales (Cero contraseñas en texto plano) ---------- */
+function sanitizeDBCredentials(dbObj) {
+  if (!dbObj) return dbObj;
+  if (Array.isArray(dbObj.atletas)) {
+    dbObj.atletas.forEach((a) => {
+      delete a.password;
+      delete a.altPasswords;
+      if (a.tutor) {
+        delete a.tutor.password;
+        delete a.tutor.altPasswords;
+      }
+    });
+  }
+  if (dbObj.equipo) {
+    delete dbObj.equipo.adminPass;
+    delete dbObj.equipo.coachPass;
+  }
+  return dbObj;
+}
+window.sanitizeDBCredentials = sanitizeDBCredentials;
+
 function loadDB() {
   let session = null;
   try {
@@ -2655,12 +2547,10 @@ function loadDB() {
           ...INITIAL_DB.equipo,
           ...(parsed.equipo || {}),
           adminUser: parsed.equipo?.adminUser || 'admin',
-          adminPass: parsed.equipo?.adminPass || 'Admin123@',
           entrenador: parsed.equipo?.entrenador || 'Cristian Javier Torres',
           entrenadorDni: parsed.equipo?.entrenadorDni || '27.884.821',
           entrenadorFechaNacimiento: parsed.equipo?.entrenadorFechaNacimiento || '1980-07-02',
           coachUser: parsed.equipo?.coachUser || 'cristian.torres',
-          coachPass: parsed.equipo?.coachPass || '27884821',
         };
         if (!Array.isArray(parsed.conceptosCobro) || parsed.conceptosCobro.length === 0) {
           parsed.conceptosCobro = JSON.parse(JSON.stringify(DEFAULT_CONCEPTOS_COBRO));
@@ -2670,6 +2560,7 @@ function loadDB() {
         migrarAtletaIdsAOpace(parsed);
         parsed.hoy = getTodayISO();
         parsed.semanaActual = getCurrentWeekISO(parsed.hoy);
+        sanitizeDBCredentials(parsed);
         return parsed;
       }
     }
@@ -2681,6 +2572,7 @@ function loadDB() {
   const fresh = JSON.parse(JSON.stringify(INITIAL_DB));
   migrarAtletaIdsAOpace(fresh);
   try {
+    sanitizeDBCredentials(fresh);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
   } catch (e) {}
   return fresh;
@@ -2923,97 +2815,6 @@ const CloudSync = {
     this._unsubscribers.push(unsubRanking);
   },
 
-  startPublicFirestoreSubscription() {
-    if (!this.firestore) return;
-    this.stopSubscriptions();
-    const db = this.firestore;
-
-    // Solo competencias y ranking_publico (sin fichas de atletas)
-    const unsubCompetencias = db.collection('competencias').onSnapshot(
-      (snap) => {
-        window.DB.competencias = snap.docs.map((d) => fixMojibakeInObj(d.data()));
-        if (typeof window.renderApp === 'function') window.renderApp(true);
-      },
-      () => {}
-    );
-    this._unsubscribers.push(unsubCompetencias);
-
-    const unsubRanking = db.collection('ranking_publico').onSnapshot(
-      (snap) => {
-        window.DB.ranking_publico = snap.docs.map((d) => fixMojibakeInObj(d.data()));
-        this.setStatus('online', 'Público');
-        if (typeof window.renderApp === 'function') window.renderApp(true);
-      },
-      () => {}
-    );
-    this._unsubscribers.push(unsubRanking);
-  },
-
-  startFirestoreSubscription() {
-    if (!this.firestore) return;
-    this.stopSubscriptions();
-
-    const docRef = this.firestore.collection('willilefche').doc('main_db');
-
-    this._unsubscribe = docRef.onSnapshot(
-      (snapshot) => {
-        if (this._ignoreNextSnapshot) {
-          this._ignoreNextSnapshot = false;
-          this.setStatus('online', 'Sincronizado en vivo');
-          return;
-        }
-
-        if (snapshot.exists) {
-          const cloudData = fixMojibakeInObj(snapshot.data());
-          // Si en la nube habían quedado datos de prueba viejos, migrar automáticamente los datos reales
-          if (isDummyData(cloudData)) {
-            console.log('Migrando Nómina Inicial real a Firebase Firestore...');
-            this.pushToCloud();
-            return;
-          }
-          if (cloudData) {
-            if (!Array.isArray(cloudData.atletas) || cloudData.atletas.length === 0) {
-              cloudData.atletas = JSON.parse(JSON.stringify(INITIAL_DB.atletas));
-            }
-            if (!Array.isArray(cloudData.conceptosCobro) || cloudData.conceptosCobro.length === 0) {
-              cloudData.conceptosCobro = JSON.parse(JSON.stringify(DEFAULT_CONCEPTOS_COBRO));
-            }
-            const mergedCatalogos = ensureCatalogosActualizados(cloudData);
-            const mergedNew = ensureInitialAtletasMerged(cloudData);
-            const migratedIds = migrarAtletaIdsAOpace(cloudData);
-            window.DB = cloudData;
-            window.DB.hoy = getTodayISO();
-            window.DB.semanaActual = getCurrentWeekISO(window.DB.hoy);
-            try {
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
-            } catch (e) {}
-            if (mergedNew || mergedCatalogos || migratedIds) {
-              this.pushToCloud();
-            } else {
-              this.setStatus('online', 'Sincronizado en vivo');
-            }
-            if (typeof window.renderApp === 'function') {
-              window.renderApp(true);
-            }
-          }
-        } else {
-          // Primera vez que se conecta el proyecto Firebase: subir Nómina Inicial real automáticamente
-          this.pushToCloud();
-        }
-      },
-      (err) => {
-        console.error('Error en suscripción Firestore:', err);
-        if (err.code === 'permission-denied') {
-          this.setStatus('error', 'Permiso denegado (Revisar Reglas Firestore)');
-        } else if (err.code === 'not-found' || (err.message && err.message.includes('does not exist'))) {
-          this.setStatus('error', 'Falta crear Firestore Database en consola');
-        } else {
-          this.setStatus('error', 'Sin conexión (Guardando en caché local)');
-        }
-      }
-    );
-  },
-
   setStatus(status, text) {
     this.status = status;
     this.statusText = text;
@@ -3025,8 +2826,8 @@ const CloudSync = {
 
   renderBadgeHtml() {
     const map = {
-      online: ['bg-success-soft text-success border-success/30', '●'],
-      connecting: ['bg-warning-soft text-warning-text border-warning/30', '◌'],
+      online: ['bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30', '●'],
+      connecting: ['bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30', '◌'],
       error: ['bg-destructive/15 text-destructive border-destructive/30', '▲'],
       local: ['bg-muted text-muted-foreground border-border', '○'],
     };
@@ -3042,108 +2843,374 @@ const CloudSync = {
     `;
   },
 
-  async pushToCloud() {
-    if (!this.firestore) return false;
-    try {
-      this._ignoreNextSnapshot = true;
-      window.DB.appKey = 'WLF-VALCHETA-2026';
-      window.DB.updatedAt = Date.now();
-      const cleanData = sanitizeForFirestore(window.DB);
-      await this.firestore.collection('willilefche').doc('main_db').set(cleanData);
+  startPublicFirestoreSubscription() {
+    if (!this.firestore) return;
+    this.stopSubscriptions();
+    const db = this.firestore;
+    this.setStatus('connecting', 'Cargando datos públicos...');
 
-      // También sincronizar colección individual de atletas/usuarios para consultas directas en Firebase
-      try {
-        const batch = this.firestore.batch();
-        const usersCol = this.firestore.collection('willilefche_usuarios');
-        // Admin
-        batch.set(usersCol.doc('admin'), {
-          appKey: 'WLF-VALCHETA-2026',
-          id: 'admin',
-          usuario: window.DB.equipo.adminUser || 'admin',
-          password: window.DB.equipo.adminPass || 'Admin123@',
-          role: 'admin',
-          nombre: 'Administrador',
-          updatedAt: window.DB.updatedAt,
-        });
-        // Entrenador (Fila 19)
-        batch.set(usersCol.doc('entrenador_cristian_torres'), {
-          appKey: 'WLF-VALCHETA-2026',
-          id: 'entrenador_cristian_torres',
-          nroNomina: 19,
-          usuario: window.DB.equipo.coachUser || 'cristian.torres',
-          password: window.DB.equipo.coachPass || '27884821',
-          role: 'coach',
-          nombre: window.DB.equipo.entrenador || 'Cristian Javier Torres',
-          dni: window.DB.equipo.entrenadorDni || '27.884.821',
-          fechaNacimiento: window.DB.equipo.entrenadorFechaNacimiento || '1980-07-02',
-          updatedAt: window.DB.updatedAt,
-        });
-        // Atletas
-        (window.DB.atletas || []).forEach((a) => {
-          batch.set(usersCol.doc(a.id), {
-            appKey: 'WLF-VALCHETA-2026',
-            id: a.id,
-            nroNomina: a.nroNomina || null,
-            nombre: a.nombre,
-            apellido: a.apellido,
-            dni: a.dni || '',
-            fechaNacimiento: a.fechaNacimiento || '',
-            categoria: a.categoria || '',
-            usuario: a.usuario,
-            password: a.password,
-            role: 'athlete',
-            tutor: a.tutor || null,
-            updatedAt: window.DB.updatedAt,
-          });
-        });
-        await batch.commit();
-      } catch (subErr) {
-        console.warn('Aviso al sincronizar colección secundaria:', subErr);
-      }
+    // 1. Competencias públicas
+    const unsubComp = db.collection('competencias').onSnapshot(
+      (snap) => {
+        const comps = [];
+        snap.forEach((d) => comps.push(fixMojibakeInObj(d.data())));
+        if (comps.length > 0) window.DB.competencias = comps;
+        if (typeof window.renderApp === 'function') window.renderApp(true);
+      },
+      () => {}
+    );
+    this._unsubscribers.push(unsubComp);
 
-      this.setStatus('online', 'Sincronizado en Nube');
-      // Sincronizar en segundo plano las colecciones modulares seguras
-      this.blindarBaseYCrearColecciones().catch((e) => {
-        console.warn('Aviso sincronizando colecciones modulares:', e);
-      });
-      return true;
-    } catch (e) {
-      console.error('Error guardando en Firestore:', e);
-      this._ignoreNextSnapshot = false;
-      this.setStatus('error', 'Error al guardar en nube');
-      return false;
-    }
+    // 2. Ranking público separado (sin fichas de salud de menores)
+    const unsubRanking = db.collection('ranking_publico').onSnapshot(
+      (snap) => {
+        const ranking = [];
+        snap.forEach((d) => ranking.push(fixMojibakeInObj(d.data())));
+        window.DB.ranking_publico = ranking;
+        this.setStatus('online', 'Público');
+        if (typeof window.renderApp === 'function') window.renderApp(true);
+      },
+      () => {}
+    );
+    this._unsubscribers.push(unsubRanking);
   },
 
-  async blindarBaseYCrearColecciones() {
-    if (!this.firestore) return { ok: false, error: 'Firestore no está inicializado.' };
-    try {
-      const db = this.firestore;
-      const now = Date.now();
+  /**
+   * Suscripción Segura y Filtrada para Atletas y Familias:
+   * Cada portal solicita ÚNICAMENTE sus propios datos (fichas, sesiones, pagos y avisos).
+   * Ningún dato privado de otros menores viaja al dispositivo ni queda en localStorage.
+   */
+  startAtletaFirestoreSubscription(atletaId) {
+    if (!this.firestore || !atletaId) return;
+    this.stopSubscriptions();
+    const db = this.firestore;
+    this.setStatus('connecting', 'Cargando tu información...');
 
-      // 1. Colección 'configuracion/general'
-      try {
-        await db.collection('configuracion').doc('general').set(
-          sanitizeForFirestore({
-            equipo: window.DB.equipo || {},
-            conceptosCobro: window.DB.conceptosCobro || [],
-            disciplinas: window.DB.disciplinas || [],
-            updatedAt: now,
-          }),
-          { merge: true }
-        );
-      } catch (e1) {
-        console.warn('Aviso configuracion/general:', e1.message);
+    // 1. Configuración general
+    const unsubCfg = db.collection('config').doc('general').onSnapshot((snap) => {
+      if (snap.exists) {
+        const cfg = fixMojibakeInObj(snap.data());
+        if (cfg.equipo) window.DB.equipo = { ...window.DB.equipo, ...cfg.equipo };
+        if (cfg.conceptosCobro) window.DB.conceptosCobro = cfg.conceptosCobro;
+        if (cfg.disciplinas) window.DB.disciplinas = cfg.disciplinas;
       }
+    }, () => {});
+    this._unsubscribers.push(unsubCfg);
 
-      // 2. Desacoplar Atletas en Perfil Público y Subcolección Privada/Ficha
+    // 2. Perfil público deportivo del propio atleta
+    const unsubAtleta = db.collection('atletas').doc(atletaId).onSnapshot(
+      (snap) => {
+        if (snap.exists) {
+          const data = fixMojibakeInObj(snap.data());
+          const existing = (window.DB.atletas || []).find((a) => a.id === atletaId) || {};
+          window.DB.atletas = [{ ...existing, ...data }];
+          saveDB();
+          if (typeof window.renderApp === 'function') window.renderApp(true);
+        }
+      },
+      (err) => console.warn('Atleta sub error:', err)
+    );
+    this._unsubscribers.push(unsubAtleta);
+
+    // 3. Ficha privada médica/salud del atleta (salud, apto físico, tutor)
+    const unsubSalud = db.collection('atletas').doc(atletaId).collection('privado').doc('salud').onSnapshot(
+      (snap) => {
+        if (snap.exists) {
+          const data = fixMojibakeInObj(snap.data());
+          const existing = (window.DB.atletas || []).find((a) => a.id === atletaId) || {};
+          window.DB.atletas = [{ ...existing, ...data }];
+          saveDB();
+          if (typeof window.renderApp === 'function') window.renderApp(true);
+        }
+      },
+      (err) => console.warn('Salud sub error:', err)
+    );
+    this._unsubscribers.push(unsubSalud);
+
+    // 4. Sesiones individuales del atleta (colección 'sesiones' filtrada por atletaId)
+    const unsubSesiones = db.collection('sesiones').where('atletaId', '==', atletaId).onSnapshot(
+      (snap) => {
+        const ses = [];
+        snap.forEach((d) => ses.push(fixMojibakeInObj(d.data())));
+        window.DB.sesiones = ses;
+        if (!window.DB.planes) window.DB.planes = {};
+        window.DB.planes[atletaId] = ses;
+        saveDB();
+        if (typeof window.renderApp === 'function') window.renderApp(true);
+      },
+      (err) => console.warn('Sesiones sub error:', err)
+    );
+    this._unsubscribers.push(unsubSesiones);
+
+    // 5. Pagos propios del atleta (colección 'pagos' filtrada por atletaId)
+    const unsubPagos = db.collection('pagos').where('atletaId', '==', atletaId).onSnapshot(
+      (snap) => {
+        const pgs = [];
+        snap.forEach((d) => pgs.push(fixMojibakeInObj(d.data())));
+        window.DB.pagos = pgs;
+        saveDB();
+        if (typeof window.renderApp === 'function') window.renderApp(true);
+      },
+      (err) => console.warn('Pagos sub error:', err)
+    );
+    this._unsubscribers.push(unsubPagos);
+
+    // 6. Avisos dirigidos al atleta o a 'TODOS'
+    const unsubAvisos = db.collection('avisos').where('destinatarios', 'array-contains-any', [atletaId, 'TODOS']).onSnapshot(
+      (snap) => {
+        const avs = [];
+        snap.forEach((d) => avs.push(fixMojibakeInObj(d.data())));
+        window.DB.avisos = avs;
+        saveDB();
+        if (typeof window.renderApp === 'function') window.renderApp(true);
+      },
+      (err) => console.warn('Avisos sub error:', err)
+    );
+    this._unsubscribers.push(unsubAvisos);
+
+    // 7. Competencias y Rankings públicos
+    const unsubComps = db.collection('competencias').onSnapshot(
+      (snap) => {
+        const comps = [];
+        snap.forEach((d) => comps.push(fixMojibakeInObj(d.data())));
+        if (comps.length > 0) window.DB.competencias = comps;
+        if (typeof window.renderApp === 'function') window.renderApp(true);
+      },
+      () => {}
+    );
+    this._unsubscribers.push(unsubComps);
+
+    const unsubRanking = db.collection('ranking_publico').onSnapshot(
+      (snap) => {
+        const ranking = [];
+        snap.forEach((d) => ranking.push(fixMojibakeInObj(d.data())));
+        window.DB.ranking_publico = ranking;
+        this.setStatus('online', 'Sincronizado');
+        if (typeof window.renderApp === 'function') window.renderApp(true);
+      },
+      () => {}
+    );
+    this._unsubscribers.push(unsubRanking);
+  },
+
+  /**
+   * Suscripción Modular para el Entrenador / Staff:
+   * Sincroniza cada colección de forma independiente (atletas, sesiones, pagos, competencias, avisos).
+   * Elimina la dependencia del documento monolítico 'main_db' y el límite de 1 MiB de Firestore.
+   */
+  startFirestoreSubscription() {
+    if (!this.firestore) return;
+    this.stopSubscriptions();
+    const db = this.firestore;
+    this.setStatus('connecting', 'Sincronizando colecciones modulares...');
+
+    // 1. Configuración General (config/general)
+    const unsubCfg = db.collection('config').doc('general').onSnapshot(
+      (snap) => {
+        if (snap.exists) {
+          const cfg = fixMojibakeInObj(snap.data());
+          if (cfg.equipo) window.DB.equipo = { ...window.DB.equipo, ...cfg.equipo };
+          if (Array.isArray(cfg.conceptosCobro)) window.DB.conceptosCobro = cfg.conceptosCobro;
+          if (Array.isArray(cfg.disciplinas)) window.DB.disciplinas = cfg.disciplinas;
+          if (Array.isArray(cfg.distanciasRanking)) window.DB.distanciasRanking = cfg.distanciasRanking;
+        }
+      },
+      (err) => console.warn('Aviso config/general:', err)
+    );
+    this._unsubscribers.push(unsubCfg);
+
+    // 2. Colección de Atletas (atletas/{atletaId})
+    const unsubAtletas = db.collection('atletas').onSnapshot(
+      async (snap) => {
+        if (snap.empty) {
+          // Si la colección en la nube está vacía (primer inicio): migrar nómina inicial a colecciones
+          console.log('Colección atletas vacía en Firestore. Subiendo nómina inicial modular...');
+          this.pushToCloud();
+          return;
+        }
+
+        const atletasMap = {};
+        snap.forEach((d) => {
+          const a = fixMojibakeInObj(d.data());
+          atletasMap[a.id] = a;
+        });
+
+        // Cargar datos privados de salud de cada atleta en segundo plano
+        const atletaIds = Object.keys(atletasMap);
+        await Promise.all(
+          atletaIds.map(async (id) => {
+            try {
+              const salSnap = await db.collection('atletas').doc(id).collection('privado').doc('salud').get();
+              if (salSnap.exists) {
+                const salData = fixMojibakeInObj(salSnap.data());
+                atletasMap[id] = { ...atletasMap[id], ...salData };
+              }
+            } catch (e) {}
+          })
+        );
+
+        const atletasArray = Object.values(atletasMap);
+        ensureCatalogosActualizados({ atletas: atletasArray });
+        ensureInitialAtletasMerged({ atletas: atletasArray });
+        migrarAtletaIdsAOpace({ atletas: atletasArray });
+        sanitizeDBCredentials({ atletas: atletasArray });
+        window.DB.atletas = atletasArray;
+
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
+        } catch (e) {}
+        this.setStatus('online', 'Sincronizado en vivo');
+        if (typeof window.renderApp === 'function') window.renderApp(true);
+      },
+      (err) => {
+        console.error('Error suscribiendo a colección atletas:', err);
+        if (err.code === 'permission-denied') {
+          this.setStatus('error', 'Permiso denegado (Revisar Reglas Firestore)');
+        } else {
+          this.setStatus('error', 'Sin conexión (Caché local)');
+        }
+      }
+    );
+    this._unsubscribers.push(unsubAtletas);
+
+    // 3. Colección de Sesiones de Entrenamiento (sesiones/{id})
+    const unsubSesiones = db.collection('sesiones').onSnapshot(
+      (snap) => {
+        const ses = [];
+        const planesMap = {};
+        snap.forEach((d) => {
+          const s = fixMojibakeInObj(d.data());
+          ses.push(s);
+          if (s.atletaId) {
+            if (!planesMap[s.atletaId]) planesMap[s.atletaId] = [];
+            planesMap[s.atletaId].push(s);
+          }
+        });
+        window.DB.sesiones = ses;
+        if (Object.keys(planesMap).length > 0) {
+          window.DB.planes = { ...window.DB.planes, ...planesMap };
+        }
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
+        } catch (e) {}
+        if (typeof window.renderApp === 'function') window.renderApp(true);
+      },
+      (err) => console.warn('Aviso sesiones:', err)
+    );
+    this._unsubscribers.push(unsubSesiones);
+
+    // 4. Colección de Pagos (pagos/{id})
+    const unsubPagos = db.collection('pagos').onSnapshot(
+      (snap) => {
+        const pgs = [];
+        snap.forEach((d) => pgs.push(fixMojibakeInObj(d.data())));
+        if (pgs.length > 0) window.DB.pagos = pgs;
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
+        } catch (e) {}
+        if (typeof window.renderApp === 'function') window.renderApp(true);
+      },
+      (err) => console.warn('Aviso pagos:', err)
+    );
+    this._unsubscribers.push(unsubPagos);
+
+    // 5. Colección de Competencias (competencias/{id})
+    const unsubComps = db.collection('competencias').onSnapshot(
+      (snap) => {
+        const comps = [];
+        snap.forEach((d) => comps.push(fixMojibakeInObj(d.data())));
+        if (comps.length > 0) window.DB.competencias = comps;
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
+        } catch (e) {}
+        if (typeof window.renderApp === 'function') window.renderApp(true);
+      },
+      (err) => console.warn('Aviso competencias:', err)
+    );
+    this._unsubscribers.push(unsubComps);
+
+    // 6. Colección de Resultados (resultados/{id})
+    const unsubResultados = db.collection('resultados').onSnapshot(
+      (snap) => {
+        const res = [];
+        snap.forEach((d) => res.push(fixMojibakeInObj(d.data())));
+        if (res.length > 0) window.DB.resultados = res;
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
+        } catch (e) {}
+        if (typeof window.renderApp === 'function') window.renderApp(true);
+      },
+      (err) => console.warn('Aviso resultados:', err)
+    );
+    this._unsubscribers.push(unsubResultados);
+
+    // 7. Colección de Avisos (avisos/{id})
+    const unsubAvisos = db.collection('avisos').onSnapshot(
+      (snap) => {
+        const avs = [];
+        snap.forEach((d) => avs.push(fixMojibakeInObj(d.data())));
+        if (avs.length > 0) window.DB.avisos = avs;
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
+        } catch (e) {}
+        if (typeof window.renderApp === 'function') window.renderApp(true);
+      },
+      (err) => console.warn('Aviso avisos:', err)
+    );
+    this._unsubscribers.push(unsubAvisos);
+
+    // 8. Colección de Ranking Público (ranking_publico/{prueba_atleta})
+    const unsubRanking = db.collection('ranking_publico').onSnapshot(
+      (snap) => {
+        const rks = [];
+        snap.forEach((d) => rks.push(fixMojibakeInObj(d.data())));
+        if (rks.length > 0) window.DB.ranking_publico = rks;
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
+        } catch (e) {}
+        if (typeof window.renderApp === 'function') window.renderApp(true);
+      },
+      (err) => console.warn('Aviso ranking_publico:', err)
+    );
+    this._unsubscribers.push(unsubRanking);
+  },
+
+  /**
+   * Sincronización Modular por Entidad:
+   * Guarda cada documento en su colección correspondiente de Firestore.
+   * Reemplaza el guardado monolítico de 1 solo documento gigante.
+   */
+  async pushToCloud() {
+    if (!this.firestore) return false;
+    const db = this.firestore;
+    const now = Date.now();
+    this.setStatus('connecting', 'Guardando en colecciones...');
+
+    try {
+      this._ignoreNextSnapshot = true;
+      sanitizeDBCredentials(window.DB);
+
+      // 1. config/general y configuracion/general
+      const configData = sanitizeForFirestore({
+        equipo: window.DB.equipo || {},
+        conceptosCobro: window.DB.conceptosCobro || [],
+        disciplinas: window.DB.disciplinas || [],
+        distanciasRanking: window.DB.distanciasRanking || DEFAULT_DISTANCIAS_RANKING,
+        updatedAt: now,
+      });
+      await db.collection('config').doc('general').set(configData, { merge: true }).catch(() => {});
+      await db.collection('configuracion').doc('general').set(configData, { merge: true }).catch(() => {});
+
+      // 2. atletas/{atletaId} y atletas/{atletaId}/privado/salud
       const atletas = window.DB.atletas || [];
       for (const a of atletas) {
+        if (!a.id) continue;
         try {
-          // Documento público deportivo (nombres, categoría, disciplinas)
+          // Ficha deportiva sin contraseñas
           await db.collection('atletas').doc(a.id).set(
             sanitizeForFirestore({
               id: a.id,
+              legacyId: a.legacyId || null,
               nroNomina: a.nroNomina || null,
               nombre: a.nombre || '',
               apellido: a.apellido || '',
@@ -3153,151 +3220,222 @@ const CloudSync = {
               tiposAtleta: a.tiposAtleta || [],
               subdisciplinas: a.subdisciplinas || [],
               pruebas: a.pruebas || '',
-              objetivo: a.objetivo || '',
+              genero: a.genero || '',
+              ciudad: a.ciudad || 'Valcheta',
               activo: a.activo !== false,
+              excluirRanking: Boolean(a.excluirRanking),
+              adherencia: a.adherencia || 100,
               updatedAt: now,
             }),
             { merge: true }
           );
 
-          // Subdocumento privado sensible (DNI, fecha nac, salud, contacto tutores)
-          await db.collection('atletas').doc(a.id).collection('privado').doc('ficha').set(
-            sanitizeForFirestore({
-              id: a.id,
-              dni: a.dni || '',
-              fechaNacimiento: a.fechaNacimiento || '',
-              email: a.email || '',
-              telefono: a.telefono || '',
-              tutor: a.tutor || null,
-              salud: a.salud || null,
-              infoDeportiva: a.infoDeportiva || null,
-              updatedAt: now,
-            }),
-            { merge: true }
-          );
-        } catch (eAtleta) {
-          console.warn(`Aviso atleta ${a.id}:`, eAtleta.message);
+          // Subdocumento privado sensible: salud, apto físico, observaciones, tutor
+          const saludData = sanitizeForFirestore({
+            id: a.id,
+            dni: a.dni || '',
+            fechaNacimiento: a.fechaNacimiento || '',
+            email: a.email || '',
+            telefono: a.telefono || '',
+            salud: a.salud || 'Apto físico en seguimiento.',
+            aptoFisico: a.aptoFisico || a.salud || 'Apto físico en seguimiento.',
+            observaciones: a.observaciones || a.antecedentes || '',
+            contactoEmergencia: a.contactoEmergencia || '',
+            tutor: a.tutor || null,
+            updatedAt: now,
+          });
+          await db.collection('atletas').doc(a.id).collection('privado').doc('salud').set(saludData, { merge: true });
+          await db.collection('atletas').doc(a.id).collection('privado').doc('ficha').set(saludData, { merge: true });
+        } catch (eA) {
+          console.warn(`Error guardando atleta ${a.id}:`, eA);
         }
       }
 
-      // 3. Colección 'pagos/{id}' (sensible, restringida a Coach o Atleta dueño)
-      const pagos = window.DB.pagos || [];
-      for (const p of pagos) {
-        try {
-          await db.collection('pagos').doc(p.id).set(sanitizeForFirestore({ ...p, updatedAt: now }), { merge: true });
-        } catch (ePago) {}
+      // 3. sesiones/{id} (Desacopladas de planes[atletaId] o DB.sesiones)
+      const sesionesToSave = [];
+      if (window.DB.planes && typeof window.DB.planes === 'object') {
+        Object.entries(window.DB.planes).forEach(([atletaId, sList]) => {
+          if (Array.isArray(sList)) {
+            sList.forEach((s) => {
+              sesionesToSave.push({
+                ...s,
+                atletaId: s.atletaId || atletaId,
+                id: s.id || `ses_${atletaId}_${s.fecha || Date.now()}`,
+              });
+            });
+          }
+        });
+      }
+      if (Array.isArray(window.DB.sesiones)) {
+        window.DB.sesiones.forEach((s) => {
+          if (!sesionesToSave.find((x) => x.id === s.id)) sesionesToSave.push(s);
+        });
       }
 
-      // 4. Colecciones de Planes, Sesiones, Asistencias, Competencias y Resultados
-      const planes = window.DB.planes || [];
-      for (const pl of planes) {
+      for (const s of sesionesToSave) {
+        if (!s.id) continue;
         try {
-          await db.collection('planes').doc(pl.id).set(sanitizeForFirestore({ ...pl, updatedAt: now }), { merge: true });
-        } catch (ePl) {}
-      }
-
-      const sesiones = window.DB.sesiones || [];
-      for (const s of sesiones) {
-        try {
-          await db.collection('sesiones').doc(s.id).set(sanitizeForFirestore({ ...s, updatedAt: now }), { merge: true });
+          await db.collection('sesiones').doc(s.id).set(
+            sanitizeForFirestore({
+              id: s.id,
+              atletaId: s.atletaId,
+              fecha: s.fecha || '',
+              tipo: s.tipo || 'Rodaje',
+              descripcion: s.descripcion || '',
+              distancia: s.distancia || '',
+              objetivo: s.objetivo || '',
+              completada: Boolean(s.completada),
+              tiempoReal: s.tiempoReal || '',
+              distanciaReal: s.distanciaReal || '',
+              sensaciones: s.sensaciones || '',
+              ritmo: s.ritmo || '',
+              updatedAt: now,
+            }),
+            { merge: true }
+          );
         } catch (eS) {}
       }
 
-      const asistencias = window.DB.asistencias || [];
-      for (const as of asistencias) {
+      // 4. pagos/{id}
+      const pagos = window.DB.pagos || [];
+      for (const p of pagos) {
+        if (!p.id) continue;
         try {
-          await db.collection('asistencias').doc(as.id).set(sanitizeForFirestore({ ...as, updatedAt: now }), { merge: true });
-        } catch (eAs) {}
+          await db.collection('pagos').doc(p.id).set(
+            sanitizeForFirestore({
+              id: p.id,
+              atletaId: p.atletaId,
+              concepto: p.concepto || 'Cuota mensual',
+              monto: p.monto || 0,
+              vencimiento: p.vencimiento || '',
+              fechaPago: p.fechaPago || '',
+              estado: p.estado || 'Pendiente',
+              comprobantePath: p.comprobantePath || '',
+              comprobante: p.comprobante || '',
+              updatedAt: now,
+            }),
+            { merge: true }
+          );
+        } catch (eP) {}
       }
 
+      // 5. competencias/{id} y resultados/{id}
       const competencias = window.DB.competencias || [];
       for (const c of competencias) {
+        if (!c.id) continue;
         try {
-          await db.collection('competencias').doc(c.id).set(sanitizeForFirestore({ ...c, updatedAt: now }), { merge: true });
+          await db.collection('competencias').doc(c.id).set(
+            sanitizeForFirestore({
+              id: c.id,
+              nombre: c.nombre || '',
+              fecha: c.fecha || '',
+              tipo: c.tipo || 'Pista y Campo',
+              lugar: c.lugar || 'Valcheta',
+              pruebas: c.pruebas || [],
+              inscriptos: c.inscriptos || [],
+              sugeridos: c.sugeridos || [],
+              updatedAt: now,
+            }),
+            { merge: true }
+          );
         } catch (eC) {}
       }
 
       const resultados = window.DB.resultados || [];
       for (const r of resultados) {
+        if (!r.id) continue;
         try {
-          await db.collection('resultados').doc(r.id).set(sanitizeForFirestore({ ...r, updatedAt: now }), { merge: true });
+          await db.collection('resultados').doc(r.id).set(
+            sanitizeForFirestore({
+              id: r.id,
+              atletaId: r.atletaId,
+              competenciaId: r.competenciaId || '',
+              prueba: r.prueba || '',
+              marca: r.marca || r.tiempo || '',
+              puesto: r.puesto || '',
+              categoria: r.categoria || '',
+              updatedAt: now,
+            }),
+            { merge: true }
+          );
         } catch (eR) {}
       }
 
-      // 5. Colección 'avisos/{id}' (con array de destinatarios)
+      // 6. avisos/{id}
       const avisos = window.DB.avisos || [];
       for (const av of avisos) {
+        if (!av.id) continue;
         try {
-          await db.collection('avisos').doc(av.id).set(sanitizeForFirestore({ ...av, updatedAt: now }), { merge: true });
+          await db.collection('avisos').doc(av.id).set(
+            sanitizeForFirestore({
+              id: av.id,
+              tipo: av.tipo || 'General',
+              destinatarios: Array.isArray(av.destinatarios) ? av.destinatarios : ['TODOS'],
+              titulo: av.titulo || '',
+              cuerpo: av.cuerpo || '',
+              fecha: av.fecha || '',
+              autor: av.autor || 'Prof. Cristian Javier Torres',
+              updatedAt: now,
+            }),
+            { merge: true }
+          );
         } catch (eAv) {}
       }
 
-      // 6. Colección 'ranking_publico/{prueba}_{atletaId}' (datos públicos disociados de la ficha médica)
+      // 7. ranking_publico/{prueba_atleta}
       for (const a of atletas) {
-        try {
-          if (a.excluirRanking) {
-            await this.borrarRankingPublicoDeAtleta(a.id);
-          } else if (Array.isArray(a.marcas)) {
-            for (const m of a.marcas) {
-              await this.guardarRankingPublicoItem({
-                prueba: m.distancia,
-                distancia: m.distancia,
-                atletaId: a.id,
-                nombre: `${a.nombre} ${a.apellido ? a.apellido[0] + '.' : ''}`,
-                categoria: a.categoria || '',
-                edad: window.Helpers ? window.Helpers.edad(a.fechaNacimiento) : null,
-                genero: a.genero || '',
-                tiempo: m.tiempo,
-                fecha: m.fecha || '',
-                competencia: m.competencia || '',
-              });
-            }
+        if (a.excluirRanking) {
+          await this.borrarRankingPublicoDeAtleta(a.id);
+        } else if (Array.isArray(a.marcas)) {
+          for (const m of a.marcas) {
+            await this.guardarMarcaEnRankingPublico(a, m);
           }
-        } catch (eRank) {}
+        }
       }
 
-      // 7. Vincular usuario actual en 'usuarios/{uid}' si hay sesión activa con UID
-      const cur = window.Auth && window.Auth.getSession();
-      if (cur && cur.uid) {
-        try {
-          await db.collection('usuarios').doc(cur.uid).set(
-            {
-              uid: cur.uid,
-              usuario: cur.usuario || '',
-              nombre: cur.nombre || '',
-              role: cur.subRole === 'admin' ? 'admin' : cur.role === 'coach' ? 'entrenador' : 'atleta',
-              updatedAt: now,
-            },
-            { merge: true }
-          );
-        } catch (eU) {}
-      }
+      // 8. Stub liviano de compatibilidad en 'willilefche/main_db' (< 100 bytes, jamás excede 1 MiB)
+      await db.collection('willilefche').doc('main_db').set({
+        appKey: 'WLF-VALCHETA-2026',
+        migratedToCollections: true,
+        version: '2.0-modular',
+        atletasCount: atletas.length,
+        updatedAt: now,
+      });
 
-      return { ok: true, mensaje: 'Base de datos blindada y colecciones separadas con éxito en Firestore.' };
-    } catch (err) {
-      console.error('Error en blindarBaseYCrearColecciones:', err);
-      return { ok: false, error: err.message || 'Error al desacoplar colecciones' };
+      this.setStatus('online', 'Sincronizado en Nube');
+      return true;
+    } catch (e) {
+      console.error('Error sincronizando colecciones modulares:', e);
+      this._ignoreNextSnapshot = false;
+      this.setStatus('error', 'Error al sincronizar colecciones');
+      return false;
     }
   },
 
-  async guardarRankingPublicoItem(item) {
-    if (!this.firestore || !item || !item.atletaId) return;
+  async guardarMarcaEnRankingPublico(atleta, marcaObj) {
+    if (!this.firestore || !atleta || !marcaObj || !marcaObj.distancia || !marcaObj.tiempo) return;
     try {
-      const pruebaNorm = String(item.distancia || item.prueba || '').replace(/[^a-zA-Z0-9]/g, '_');
-      const docId = `${pruebaNorm}_${item.atletaId}`;
+      const cleanDist = String(marcaObj.distancia).toLowerCase().replace(/\s+/g, '_');
+      const docId = `${cleanDist}_${atleta.id}`;
+      const apInicial = atleta.apellido ? `${atleta.apellido.trim().split(/\s+/)[0][0]}.` : '';
+      const nombreCorto = `${atleta.nombre} ${apInicial}`.trim();
+      const edadCalc = typeof Helpers !== 'undefined' && typeof Helpers.edad === 'function' ? Helpers.edad(atleta.fechaNacimiento) : null;
+
       await this.firestore.collection('ranking_publico').doc(docId).set(
         sanitizeForFirestore({
           id: docId,
-          prueba: item.distancia || item.prueba,
-          distancia: item.distancia || item.prueba,
-          atletaId: item.atletaId,
-          nombre: item.nombre,
-          categoria: item.categoria || '',
-          edad: item.edad || null,
-          genero: item.genero || '',
-          tiempo: item.tiempo,
-          fecha: item.fecha || '',
-          competencia: item.competencia || '',
+          atletaId: atleta.id,
+          distancia: marcaObj.distancia,
+          prueba: marcaObj.distancia,
+          nombre: nombreCorto,
+          nombreCorto: nombreCorto,
+          categoria: atleta.categoria || '',
+          edad: edadCalc,
+          genero: atleta.genero || '',
+          tiempo: marcaObj.tiempo,
+          marca: marcaObj.tiempo,
+          fecha: marcaObj.fecha || '',
+          competencia: marcaObj.competencia || '',
           updatedAt: Date.now(),
         }),
         { merge: true }
@@ -3323,6 +3461,7 @@ const CloudSync = {
 window.CloudSync = CloudSync;
 
 function saveDB() {
+  sanitizeDBCredentials(window.DB);
   window.DB.updatedAt = Date.now();
   const session =
     window.Auth && typeof window.Auth.getSession === 'function' ? window.Auth.getSession() : null;

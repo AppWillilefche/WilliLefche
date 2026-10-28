@@ -136,14 +136,17 @@ function renderEstadoSesionBadge(estado) {
   return `<span class="rounded-full px-2 py-0.5 text-xs font-medium ${cls}">${label}</span>`;
 }
 
-function renderEstadoPagoBadge(estado) {
+function renderEstadoPagoBadge(estado, motivoRechazo = null) {
   const map = {
-    pagado: ['Pagado', 'bg-success-soft text-success'],
-    pendiente: ['Pendiente', 'bg-warning-soft text-warning-text'],
-    vencido: ['Vencido', 'bg-destructive/10 text-destructive'],
+    pagado: ['Pagado', 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'],
+    pendiente: ['Pendiente', 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'],
+    vencido: ['Vencido', 'bg-destructive/15 text-destructive border border-destructive/30'],
+    informado: ['En revisión', 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30'],
+    rechazado: ['Rechazado', 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30'],
   };
   const [label, cls] = map[estado] || map.pendiente;
-  return `<span class="rounded-full px-2 py-0.5 text-xs font-medium ${cls}">${label}</span>`;
+  const tooltip = (estado === 'rechazado' && motivoRechazo) ? ` title="Motivo: ${esc(motivoRechazo)}"` : '';
+  return `<span${tooltip} class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls}">${label}</span>`;
 }
 
 function renderAvatar(nombre, apellido, sizeCls = 'size-10 text-base') {
@@ -313,7 +316,7 @@ function renderSessionCard(sesion, actionHtml = '') {
 
 /* ---------- Header y Footer Públicos ---------- */
 function renderPublicHeader(activePath = '/') {
-  const session = Auth.getSession();
+  const session = typeof Auth.verifyCurrentSession === 'function' ? Auth.verifyCurrentSession() : Auth.getSession();
   const links = [
     { to: '#/', path: '/', label: 'Inicio' },
     { to: '#/rankings', path: '/rankings', label: 'Rankings' },
@@ -890,7 +893,7 @@ window.handleLoginSubmit = async (e) => {
    ========================================================================== */
 
 function renderCoachShell(activeSection, contentHtml) {
-  const session = Auth.getSession();
+  const session = typeof Auth.verifyCurrentSession === 'function' ? Auth.verifyCurrentSession() : Auth.getSession();
   const isAdmin = Boolean(session && session.subRole === 'admin');
   const navItems = [
     { to: '#/entrenador', id: 'panel', label: 'Panel', icon: 'layout-dashboard' },
@@ -1071,7 +1074,7 @@ function viewCoachDashboard() {
     },
   ];
 
-  const session = Auth.getSession();
+  const session = typeof Auth.verifyCurrentSession === 'function' ? Auth.verifyCurrentSession() : Auth.getSession();
   const isAdmin = Boolean(session && session.subRole === 'admin');
   const saludoNombre = isAdmin
     ? 'Administrador'
@@ -1556,8 +1559,10 @@ function viewCoachAtletaFicha(atletaId) {
                   <input id="cred-user" required value="${esc(atleta.usuario)}" class="mt-1 h-9 w-full rounded-lg border bg-card px-3 text-sm font-mono" />
                 </div>
                 <div>
-                  <label class="text-xs font-semibold">Contraseña del atleta (DNI sin puntos)</label>
-                  <input id="cred-pass" required value="${esc(atleta.password)}" class="mt-1 h-9 w-full rounded-lg border bg-card px-3 text-sm font-mono" />
+                  <label class="text-xs font-semibold">Acceso Seguro Firebase</label>
+                  <div class="mt-1 flex h-9 items-center rounded-lg border bg-muted/40 px-3 text-xs font-medium text-muted-foreground">
+                    <span class="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold"><i data-lucide="shield-check" class="size-4"></i> Protegido en la nube (Inicial: DNI)</span>
+                  </div>
                 </div>
               </div>
               ${
@@ -1568,8 +1573,10 @@ function viewCoachAtletaFicha(atletaId) {
                         <input id="cred-tuser" required value="${esc(atleta.tutor.usuario)}" class="mt-1 h-9 w-full rounded-lg border bg-card px-3 text-sm font-mono" />
                       </div>
                       <div>
-                        <label class="text-xs font-semibold">Contraseña familiar</label>
-                        <input id="cred-tpass" required value="${esc(atleta.tutor.password)}" class="mt-1 h-9 w-full rounded-lg border bg-card px-3 text-sm font-mono" />
+                        <label class="text-xs font-semibold">Acceso Familiar Firebase</label>
+                        <div class="mt-1 flex h-9 items-center rounded-lg border bg-muted/40 px-3 text-xs font-medium text-muted-foreground">
+                          <span class="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold"><i data-lucide="shield-check" class="size-4"></i> Protegido en la nube</span>
+                        </div>
                       </div>
                     </div>`
                   : ''
@@ -1791,7 +1798,14 @@ function viewCoachAtletaFicha(atletaId) {
                         <span class="font-semibold text-foreground">${esc(p.concepto)}</span> · ${
                       p.estado === 'pagado' && p.fechaPago
                         ? `pagado el ${Helpers.fechaCorta(p.fechaPago)}`
+                        : p.estado === 'informado'
+                        ? `<span class="font-semibold text-blue-600 dark:text-blue-400">informado el ${Helpers.fechaCorta(p.fechaPago || p.informadoEn)} (en revisión)</span>`
                         : `vence ${Helpers.fechaCorta(p.vencimiento)}`
+                    }
+                    ${
+                      p.estado === 'rechazado' && p.motivoRechazo
+                        ? `<span class="block mt-1 text-xs font-medium text-destructive">⚠️ Rechazado: ${esc(p.motivoRechazo)}</span>`
+                        : ''
                     }
                         ${
                           p.estado === 'pagado' && p.medioPago
@@ -1802,7 +1816,7 @@ function viewCoachAtletaFicha(atletaId) {
                       </p>
                     </div>
                     <span class="font-semibold tabular-nums">${Helpers.pesos(p.monto)}</span>
-                    ${renderEstadoPagoBadge(p.estado)}
+                    ${renderEstadoPagoBadge(p.estado, p.motivoRechazo)}
                     <div class="inline-flex flex-wrap items-center gap-1.5">
                       ${
                         p.comprobanteDataUrl
@@ -1812,7 +1826,14 @@ function viewCoachAtletaFicha(atletaId) {
                           : ''
                       }
                       ${
-                        p.estado !== 'pagado'
+                        p.estado === 'informado'
+                          ? `<button type="button" onclick="confirmarPagoCoach('${p.id}')" class="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-emerald-700" title="Confirmar ingreso del dinero">
+                              ✓ Confirmar
+                            </button>
+                            <button type="button" onclick="openRechazarPagoModal('${p.id}')" class="inline-flex items-center gap-1 rounded-lg border border-destructive/40 bg-destructive/10 px-2 py-1 text-xs font-semibold text-destructive hover:bg-destructive/20" title="Rechazar comprobante">
+                              ✕ Rechazar
+                            </button>`
+                          : p.estado !== 'pagado'
                           ? `<button type="button" onclick="openRegistrarPagoModal('${p.id}')" class="rounded-lg border bg-card px-3 py-1.5 text-xs font-semibold hover:bg-muted">
                               Registrar pago
                             </button>`
@@ -2604,10 +2625,10 @@ window.saveCredencialesAtleta = (e, atletaId) => {
   const a = Helpers.getAtleta(atletaId);
   if (!a) return;
   a.usuario = document.getElementById('cred-user').value.trim().toLowerCase();
-  a.password = document.getElementById('cred-pass').value.trim();
+  // Contraseñas gestionadas de forma segura por Firebase Authentication
   if (a.tutor && document.getElementById('cred-tuser')) {
     a.tutor.usuario = document.getElementById('cred-tuser').value.trim().toLowerCase();
-    a.tutor.password = document.getElementById('cred-tpass').value.trim();
+    // Contraseñas de tutores gestionadas por Firebase Auth
   }
   saveDB();
   showToast(`Credenciales de ${a.nombre} guardadas`);
@@ -2831,9 +2852,11 @@ function viewCoachPagos() {
 
   const filtrosEstado = [
     { id: 'Todos', label: 'Todos' },
+    { id: 'informado', label: 'A verificar' },
     { id: 'vencido', label: 'Vencidos' },
     { id: 'pendiente', label: 'Pendientes' },
     { id: 'pagado', label: 'Pagados' },
+    { id: 'rechazado', label: 'Rechazados' },
   ];
   const catalogoConceptos = getConceptosCobroList();
   const nombresConceptos = Array.from(
@@ -2886,20 +2909,97 @@ function viewCoachPagos() {
       </div>`
     )}
     <div class="space-y-6 px-4 py-6 sm:px-8">
-      <div class="grid gap-4 sm:grid-cols-3">
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div class="rounded-xl border bg-card p-5">
           <p class="text-sm font-medium text-muted-foreground">Vencido</p>
-          <p class="mt-1 font-display text-4xl font-bold tabular-nums text-destructive">${Helpers.pesos(suma('vencido'))}</p>
+          <p class="mt-1 font-display text-3xl font-bold tabular-nums text-destructive">${Helpers.pesos(suma('vencido'))}</p>
         </div>
         <div class="rounded-xl border bg-card p-5">
           <p class="text-sm font-medium text-muted-foreground">Por cobrar</p>
-          <p class="mt-1 font-display text-4xl font-bold tabular-nums text-warning-text">${Helpers.pesos(suma('pendiente'))}</p>
+          <p class="mt-1 font-display text-3xl font-bold tabular-nums text-warning-text">${Helpers.pesos(suma('pendiente'))}</p>
         </div>
         <div class="rounded-xl border bg-card p-5">
-          <p class="text-sm font-medium text-muted-foreground">Cobrado</p>
-          <p class="mt-1 font-display text-4xl font-bold tabular-nums text-success">${Helpers.pesos(suma('pagado'))}</p>
+          <p class="text-sm font-medium text-muted-foreground">A verificar (Informados)</p>
+          <p class="mt-1 font-display text-3xl font-bold tabular-nums text-blue-600 dark:text-blue-400">${Helpers.pesos(suma('informado'))}</p>
+        </div>
+        <div class="rounded-xl border bg-card p-5">
+          <p class="text-sm font-medium text-muted-foreground">Cobrado confirmado</p>
+          <p class="mt-1 font-display text-3xl font-bold tabular-nums text-success">${Helpers.pesos(suma('pagado'))}</p>
         </div>
       </div>
+
+      <!-- Bandeja de Pagos a Verificar -->
+      ${(() => {
+        const porVerificar = DB.pagos.filter((p) => p.estado === 'informado');
+        if (porVerificar.length === 0) return '';
+        return `
+        <section class="rounded-xl border-2 border-blue-500/40 bg-blue-500/5 p-5 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-blue-500/20 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="flex size-3 rounded-full bg-blue-500 animate-pulse"></span>
+              <h2 class="text-xl font-bold text-blue-950 dark:text-blue-100">
+                Bandeja de Pagos a Verificar (${porVerificar.length})
+              </h2>
+            </div>
+            <p class="text-xs text-muted-foreground">Comprobantes enviados por atletas o familias pendientes de validación</p>
+          </div>
+          <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            ${porVerificar
+              .map((p) => {
+                const a = Helpers.getAtleta(p.atletaId);
+                return `
+              <div class="flex flex-col justify-between rounded-xl border border-blue-200 dark:border-blue-900 bg-card p-4 shadow-xs">
+                <div>
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0">
+                      <a href="#/entrenador/atletas/${a ? a.id : p.atletaId}" class="font-bold text-sm truncate hover:text-primary">
+                        ${esc(a ? Helpers.nombreCompleto(a) : p.atletaId)}
+                      </a>
+                      <p class="text-xs text-muted-foreground">${esc(p.detalle || p.concepto)}</p>
+                    </div>
+                    <span class="font-display text-lg font-bold tabular-nums text-primary">${Helpers.pesos(p.monto)}</span>
+                  </div>
+                  <div class="mt-2 text-xs text-muted-foreground space-y-0.5">
+                    <p>Medio: <strong class="text-foreground">${p.medioPago === 'efectivo' ? '💵 Efectivo' : '💸 Transferencia'}</strong></p>
+                    <p>Fecha informada: <strong class="text-foreground">${Helpers.fechaCorta(p.fechaPago || p.informadoEn)}</strong></p>
+                    ${p.informadoPor ? `<p>Informó: <em>${esc(p.informadoPor)}</em></p>` : ''}
+                    ${p.notaPago ? `<p class="italic text-foreground">“${esc(p.notaPago)}”</p>` : ''}
+                  </div>
+                  ${
+                    p.comprobanteDataUrl
+                      ? `
+                    <div class="mt-3">
+                      <button type="button" onclick="verComprobanteModal('${p.id}')" class="group relative block w-full overflow-hidden rounded-lg border bg-muted/40 hover:opacity-90">
+                        <img src="${p.comprobanteDataUrl}" alt="Comprobante" class="h-28 w-full object-cover object-center" />
+                        <span class="absolute inset-x-0 bottom-0 bg-black/60 py-1 text-center text-[11px] font-semibold text-white">
+                          🔍 Ver comprobante completo
+                        </span>
+                      </button>
+                    </div>
+                  `
+                      : `
+                    <div class="mt-3 rounded-lg bg-muted/40 p-2 text-center text-xs text-muted-foreground italic">
+                      Sin comprobante adjunto (${p.medioPago === 'efectivo' ? 'Efectivo' : 'Transferencia'})
+                    </div>
+                  `
+                  }
+                </div>
+                <div class="mt-4 flex items-center justify-end gap-2 border-t pt-3">
+                  <button type="button" onclick="openRechazarPagoModal('${p.id}')" class="inline-flex items-center gap-1 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive/20">
+                    ✕ Rechazar
+                  </button>
+                  <button type="button" onclick="confirmarPagoCoach('${p.id}')" class="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 shadow-xs">
+                    ✓ Confirmar ingreso
+                  </button>
+                </div>
+              </div>
+              `;
+              })
+              .join('')}
+          </div>
+        </section>
+        `;
+      })()}
 
       <!-- Listado de Morosos y Saldo Deudor por Atleta -->
       <section class="rounded-xl border bg-card p-5">
@@ -3047,27 +3147,43 @@ function viewCoachPagos() {
                           <p class="text-xs text-muted-foreground">
                             ${esc(p.concepto)}
                             ${
-                              p.estado === 'pagado' && p.medioPago
+                              (p.estado === 'pagado' || p.estado === 'informado') && p.medioPago
                                 ? ` · <span class="font-semibold text-foreground">${p.medioPago === 'efectivo' ? '💵 Efectivo' : '💸 Transferencia'}</span>`
                                 : ''
                             }
                             ${p.notaPago ? ` · <em>“${esc(p.notaPago)}”</em>` : ''}
                           </p>
+                          ${
+                            p.estado === 'rechazado' && p.motivoRechazo
+                              ? `<p class="mt-0.5 text-xs font-medium text-destructive">Rechazado: ${esc(p.motivoRechazo)}</p>`
+                              : p.estado === 'pagado' && p.confirmadoPor
+                              ? `<p class="mt-0.5 text-[11px] text-muted-foreground">Confirmado por ${esc(p.confirmadoPor)} (${Helpers.fechaCorta(p.confirmadoEn)})</p>`
+                              : p.estado === 'informado' && p.informadoPor
+                              ? `<p class="mt-0.5 text-[11px] text-blue-600 dark:text-blue-400">Informado por ${esc(p.informadoPor)} (${Helpers.fechaCorta(p.fechaPago || p.informadoEn)})</p>`
+                              : ''
+                          }
                         </td>
                         <td class="px-3 py-3 tabular-nums">${Helpers.fechaCorta(p.vencimiento)}</td>
                         <td class="px-3 py-3 text-right font-semibold tabular-nums">${Helpers.pesos(p.monto)}</td>
-                        <td class="px-3 py-3">${renderEstadoPagoBadge(p.estado)}</td>
+                        <td class="px-3 py-3">${renderEstadoPagoBadge(p.estado, p.motivoRechazo)}</td>
                         <td class="px-5 py-3 text-right">
                           <div class="inline-flex flex-wrap items-center justify-end gap-2">
                             ${
                               p.comprobanteDataUrl
                                 ? `<button type="button" onclick="verComprobanteModal('${p.id}')" class="inline-flex items-center gap-1 rounded-lg border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary/20">
-                                    📎 Ver comprobante
+                                    📎 Comprobante
                                   </button>`
                                 : ''
                             }
                             ${
-                              p.estado !== 'pagado'
+                              p.estado === 'informado'
+                                ? `<button type="button" onclick="confirmarPagoCoach('${p.id}')" class="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-emerald-700" title="Confirmar ingreso del dinero">
+                                    ✓ Confirmar
+                                  </button>
+                                  <button type="button" onclick="openRechazarPagoModal('${p.id}')" class="inline-flex items-center gap-1 rounded-lg border border-destructive/40 bg-destructive/10 px-2 py-1 text-xs font-semibold text-destructive hover:bg-destructive/20" title="Rechazar comprobante">
+                                    ✕ Rechazar
+                                  </button>`
+                                : p.estado !== 'pagado'
                                 ? `<button type="button" onclick="openRegistrarPagoModal('${p.id}')" class="rounded-lg border bg-card px-3 py-1.5 text-xs font-semibold hover:bg-muted">
                                     Registrar pago
                                   </button>`
@@ -3115,7 +3231,7 @@ function renderRegistrarPagoModalContent(pago) {
   showModalHtml(`
     <div class="flex items-start justify-between">
       <div>
-        <h2 class="text-xl font-bold">${pago.estado === 'pagado' ? 'Detalle y comprobante de pago' : 'Registrar pago'}</h2>
+        <h2 class="text-xl font-bold">${pago.estado === 'pagado' ? 'Detalle y comprobante de pago' : (session?.role === 'coach' ? 'Registrar / Confirmar pago' : 'Informar pago realizado')}</h2>
         <p class="text-sm text-muted-foreground">
           ${atleta ? `${esc(Helpers.nombreCompleto(atleta))} · ` : ''}<strong>${esc(pago.detalle || pago.concepto)}</strong> (${Helpers.pesos(pago.monto)})
         </p>
@@ -3197,7 +3313,7 @@ function renderRegistrarPagoModalContent(pago) {
       <div class="flex justify-end gap-2 pt-2">
         <button type="button" onclick="closeModal()" class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">Cancelar</button>
         <button type="submit" class="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-95">
-          Confirmar pago
+          ${session?.role === 'coach' ? 'Confirmar y registrar pago' : 'Informar pago (Enviar a revisión)'}
         </button>
       </div>
     </form>
@@ -3254,21 +3370,102 @@ window.saveRegistrarPagoModal = (e, pagoId) => {
   e.preventDefault();
   const pago = DB.pagos.find((p) => p.id === pagoId);
   if (!pago) return;
-  const session = Auth.getSession();
-  pago.estado = 'pagado';
+  const session = typeof Auth.verifyCurrentSession === 'function' ? Auth.verifyCurrentSession() : Auth.getSession();
+  const isCoach = Boolean(session && session.role === 'coach');
+
   pago.medioPago = tempMedioPago;
   pago.fechaPago = document.getElementById('rp-fecha')?.value || DB.hoy;
   pago.notaPago = document.getElementById('rp-nota')?.value.trim() || undefined;
   pago.comprobanteDataUrl = tempComprobanteDataUrl || undefined;
-  pago.registradoPor = session?.role === 'coach' ? 'entrenador' : 'atleta';
+
+  if (isCoach) {
+    pago.estado = 'pagado';
+    pago.confirmadoPor = session?.nombre || 'Entrenador';
+    pago.confirmadoEn = new Date().toISOString();
+    delete pago.motivoRechazo;
+    delete pago.rechazadoPor;
+    delete pago.rechazadoEn;
+    showToast(
+      tempMedioPago === 'efectivo'
+        ? 'Pago en efectivo confirmado correctamente'
+        : 'Pago por transferencia confirmado correctamente'
+    );
+  } else {
+    pago.estado = 'informado';
+    pago.informadoPor = session?.nombre || 'Atleta / Familia';
+    pago.informadoEn = new Date().toISOString();
+    delete pago.motivoRechazo;
+    delete pago.rechazadoPor;
+    delete pago.rechazadoEn;
+    showToast('Pago informado con éxito. Quedó en revisión para confirmación del entrenador.');
+  }
 
   saveDB();
   closeModal();
-  showToast(
-    tempMedioPago === 'efectivo'
-      ? 'Pago en efectivo registrado correctamente'
-      : 'Pago por transferencia registrado correctamente'
-  );
+  renderApp();
+};
+
+window.confirmarPagoCoach = (pagoId) => {
+  const pago = DB.pagos.find((p) => p.id === pagoId);
+  if (!pago) return;
+  const session = typeof Auth.verifyCurrentSession === 'function' ? Auth.verifyCurrentSession() : Auth.getSession();
+  pago.estado = 'pagado';
+  pago.confirmadoPor = session?.nombre || 'Entrenador';
+  pago.confirmadoEn = new Date().toISOString();
+  pago.fechaPago = pago.fechaPago || DB.hoy;
+  delete pago.motivoRechazo;
+  delete pago.rechazadoPor;
+  delete pago.rechazadoEn;
+
+  saveDB();
+  showToast(`Pago de ${Helpers.pesos(pago.monto)} confirmado exitosamente.`);
+  renderApp();
+};
+
+window.openRechazarPagoModal = (pagoId) => {
+  const pago = DB.pagos.find((p) => p.id === pagoId);
+  if (!pago) return;
+  const atleta = Helpers.getAtleta(pago.atletaId);
+  showModalHtml(`
+    <div class="flex items-start justify-between">
+      <div>
+        <h2 class="text-xl font-bold text-destructive">Rechazar comprobante de pago</h2>
+        <p class="text-sm text-muted-foreground">
+          ${atleta ? `${esc(Helpers.nombreCompleto(atleta))} — ` : ''}<strong>${esc(pago.detalle || pago.concepto)}</strong> (${Helpers.pesos(pago.monto)})
+        </p>
+      </div>
+      <button type="button" onclick="closeModal()" class="text-muted-foreground hover:text-foreground">✕</button>
+    </div>
+    <form onsubmit="confirmarRechazoPago(event, '${pago.id}')" class="mt-4 space-y-4">
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Motivo del rechazo</label>
+        <p class="mb-2 text-xs text-muted-foreground">Este motivo será informado al atleta o familia para que puedan corregirlo y volver a informar.</p>
+        <textarea id="rechazo-motivo" required rows="3" placeholder="Ej.: El comprobante es ilegible, no coincide el importe transferido, o la transferencia no ingresó en la cuenta bancaria." class="w-full rounded-lg border bg-card p-3 text-sm outline-none focus:ring-2 focus:ring-ring"></textarea>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="closeModal()" class="rounded-lg border px-4 py-2 text-xs font-semibold hover:bg-muted">Cancelar</button>
+        <button type="submit" class="rounded-lg bg-destructive px-4 py-2 text-xs font-semibold text-destructive-foreground hover:opacity-95">Rechazar comprobante</button>
+      </div>
+    </form>
+  `);
+};
+
+window.confirmarRechazoPago = (e, pagoId) => {
+  e.preventDefault();
+  const pago = DB.pagos.find((p) => p.id === pagoId);
+  if (!pago) return;
+  const session = typeof Auth.verifyCurrentSession === 'function' ? Auth.verifyCurrentSession() : Auth.getSession();
+  const motivo = document.getElementById('rechazo-motivo').value.trim();
+  pago.estado = 'rechazado';
+  pago.motivoRechazo = motivo;
+  pago.rechazadoPor = session?.nombre || 'Entrenador';
+  pago.rechazadoEn = new Date().toISOString();
+  delete pago.confirmadoPor;
+  delete pago.confirmadoEn;
+
+  saveDB();
+  closeModal();
+  showToast('Comprobante rechazado. El cobro volvió a quedar como deuda con motivo.');
   renderApp();
 };
 
@@ -4047,7 +4244,7 @@ function renderHeroEntrenamientoDia(atleta, sesiones, familia) {
 }
 
 function viewAtletaPortal(atletaId, modoFamilia = false) {
-  const session = Auth.getSession();
+  const session = typeof Auth.verifyCurrentSession === 'function' ? Auth.verifyCurrentSession() : Auth.getSession();
   const isCoachPreview = session && session.role === 'coach';
   const atleta = Helpers.getAtleta(atletaId) || DB.atletas[0];
   const familia = modoFamilia ? atleta.tutor || { nombre: 'Tutor autorizado', vinculo: 'Familia' } : null;
@@ -4270,7 +4467,7 @@ function viewAtletaPortal(atletaId, modoFamilia = false) {
                       </p>
                     </div>
                     <span class="font-semibold tabular-nums">${Helpers.pesos(p.monto)}</span>
-                    ${renderEstadoPagoBadge(p.estado)}
+                    ${renderEstadoPagoBadge(p.estado, p.motivoRechazo)}
                     <div class="inline-flex flex-wrap items-center gap-1.5">
                       ${
                         p.comprobanteDataUrl
@@ -4280,12 +4477,20 @@ function viewAtletaPortal(atletaId, modoFamilia = false) {
                           : ''
                       }
                       ${
-                        p.estado !== 'pagado'
-                          ? `<button type="button" onclick="openRegistrarPagoModal('${p.id}')" class="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-95">
-                              Registrar pago / Adjuntar comprobante
-                            </button>`
-                          : `<button type="button" onclick="openRegistrarPagoModal('${p.id}')" class="rounded-lg border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+                        p.estado === 'pagado'
+                          ? `<button type="button" onclick="openRegistrarPagoModal('${p.id}')" class="rounded-lg border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
                               ${p.comprobanteDataUrl ? 'Cambiar comprobante' : '+ Adjuntar comprobante'}
+                            </button>`
+                          : p.estado === 'informado'
+                          ? `<button type="button" onclick="openRegistrarPagoModal('${p.id}')" class="rounded-lg border border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-950/30 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:text-blue-300 hover:bg-blue-100">
+                              Reenviar comprobante / Editar
+                            </button>`
+                          : p.estado === 'rechazado'
+                          ? `<button type="button" onclick="openRegistrarPagoModal('${p.id}')" class="inline-flex items-center gap-1 rounded-lg bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground hover:opacity-95">
+                              Informar pago nuevamente
+                            </button>`
+                          : `<button type="button" onclick="openRegistrarPagoModal('${p.id}')" class="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-95">
+                              Informar pago
                             </button>`
                       }
                     </div>
@@ -4692,7 +4897,7 @@ window.saveObjetivo = (e, atletaId, objId = '') => {
 
   if (!texto) return;
 
-  const session = Auth.getSession();
+  const session = typeof Auth.verifyCurrentSession === 'function' ? Auth.verifyCurrentSession() : Auth.getSession();
   const creadoPor = session && session.role === 'coach' ? 'entrenador' : 'atleta';
 
   if (objId) {
@@ -4742,7 +4947,7 @@ window.deleteObjetivo = (atletaId, objId) => {
 
 // Modal con la Tabla Completa de la Nómina Oficial y Credenciales de Acceso (Solo Entrenador/Admin autenticado)
 window.openNominaCredencialesModal = () => {
-  const session = Auth.getSession();
+  const session = typeof Auth.verifyCurrentSession === 'function' ? Auth.verifyCurrentSession() : Auth.getSession();
   if (!session || session.role !== 'coach') {
     showToast('Debés iniciar sesión como Entrenador o Administrador', 'info');
     return;
@@ -4764,7 +4969,7 @@ window.openNominaCredencialesModal = () => {
         <p class="mt-1 text-sm font-semibold">${esc(eq.entrenador || 'Cristian Javier Torres')} · DNI ${esc(eq.entrenadorDni || '27.884.821')} · Nac: 02/07/1980</p>
         <p class="mt-1 text-xs text-muted-foreground">
           Usuario: <code class="rounded bg-card px-1.5 py-0.5 font-mono font-bold text-foreground">${esc(eq.coachUser || 'cristian.torres')}</code> ·
-          Contraseña: <code class="rounded bg-card px-1.5 py-0.5 font-mono font-bold text-foreground">${esc(eq.coachPass || '27884821')}</code>
+          Acceso: <span class="rounded bg-emerald-500/10 px-1.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">Protegido por Firebase Auth</span> (Clave inicial: DNI)
         </p>
       </div>
 
@@ -4778,7 +4983,7 @@ window.openNominaCredencialesModal = () => {
               <th class="px-3 py-2.5 font-semibold">Cat.</th>
               <th class="px-3 py-2.5 font-semibold">DNI</th>
               <th class="px-3 py-2.5 font-semibold">Usuario Atleta</th>
-              <th class="px-3 py-2.5 font-semibold">Contraseña</th>
+              <th class="px-3 py-2.5 font-semibold">Estado de Seguridad</th>
               <th class="px-3 py-2.5 font-semibold">Usuario Familia</th>
             </tr>
           </thead>
@@ -4797,7 +5002,7 @@ window.openNominaCredencialesModal = () => {
                 <td class="px-3 py-2"><span class="rounded bg-secondary px-1.5 py-0.5 font-semibold">${esc(a.categoria)}</span></td>
                 <td class="px-3 py-2 font-mono">${esc(a.dni || '—')}</td>
                 <td class="px-3 py-2 font-mono font-bold text-primary">${esc(a.usuario)}</td>
-                <td class="px-3 py-2 font-mono font-semibold">${esc(a.password)}</td>
+                <td class="px-3 py-2"><span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400"><i data-lucide="shield-check" class="size-3.5"></i> Protegido</span></td>
                 <td class="px-3 py-2 font-mono text-muted-foreground">${esc(a.tutor?.usuario || '—')}</td>
               </tr>
             `
@@ -4820,7 +5025,7 @@ window.openNominaCredencialesModal = () => {
 
 // Modal de Configuración de Firebase, Credenciales de Admin y Backups JSON (EXCLUSIVO ADMINISTRADOR AUTENTICADO)
 window.openCloudConfigModal = () => {
-  const session = Auth.getSession();
+  const session = typeof Auth.verifyCurrentSession === 'function' ? Auth.verifyCurrentSession() : Auth.getSession();
   if (!session || session.subRole !== 'admin') {
     showToast('Acceso restringido exclusivamente al Administrador', 'info');
     return;
@@ -4887,7 +5092,9 @@ window.openCloudConfigModal = () => {
           </div>
           <div>
             <label class="text-xs font-medium">Contraseña Administrador</label>
-            <input id="adm-pass" type="password" required value="${esc(DB.equipo.adminPass || 'Admin123@')}" class="h-9 w-full rounded-lg border bg-card px-3 text-xs font-mono" />
+            <div class="h-9 w-full rounded-lg border bg-muted/40 px-3 flex items-center text-xs text-muted-foreground font-semibold text-emerald-600 dark:text-emerald-400">
+              <i data-lucide="shield-check" class="size-3.5 mr-1.5"></i> Firebase Auth
+            </div>
           </div>
           <div>
             <label class="text-xs font-medium">Nombre Entrenador (N.º 19)</label>
@@ -4903,7 +5110,9 @@ window.openCloudConfigModal = () => {
           </div>
           <div>
             <label class="text-xs font-medium">Contraseña Entrenador</label>
-            <input id="adm-coach-pass" type="password" required value="${esc(DB.equipo.coachPass || '27884821')}" class="h-9 w-full rounded-lg border bg-card px-3 text-xs font-mono" />
+            <div class="h-9 w-full rounded-lg border bg-muted/40 px-3 flex items-center text-xs text-muted-foreground font-semibold text-emerald-600 dark:text-emerald-400">
+              <i data-lucide="shield-check" class="size-3.5 mr-1.5"></i> Firebase Auth
+            </div>
           </div>
         </div>
         <div class="flex justify-end items-center pt-1">
@@ -5008,11 +5217,11 @@ window.saveAdminProfile = (e) => {
   const s = Auth.getSession();
   if (!s || s.subRole !== 'admin') return;
   DB.equipo.adminUser = document.getElementById('adm-user').value.trim().toLowerCase();
-  DB.equipo.adminPass = document.getElementById('adm-pass').value.trim();
+  
   DB.equipo.entrenador = document.getElementById('adm-nombre').value.trim();
   DB.equipo.entrenadorDni = document.getElementById('adm-dni').value.trim();
   DB.equipo.coachUser = document.getElementById('adm-coach-user').value.trim().toLowerCase();
-  DB.equipo.coachPass = document.getElementById('adm-coach-pass').value.trim();
+  
   saveDB();
   closeModal();
   showToast('Credenciales de Administrador y Entrenador actualizadas');
@@ -5590,7 +5799,7 @@ window.downloadPlanillaCargaExcel = (atletaId = null) => {
 };
 
 window.openImportarPlanExcelModal = (defaultAtletaId = null) => {
-  const session = Auth.getSession();
+  const session = typeof Auth.verifyCurrentSession === 'function' ? Auth.verifyCurrentSession() : Auth.getSession();
   if (!session || session.role !== 'coach') return;
 
   const atleta = defaultAtletaId ? Helpers.getAtleta(defaultAtletaId) : null;
@@ -6847,7 +7056,7 @@ window.saveNuevoAtleta = (e) => {
   const apellido = document.getElementById('na-apellido').value.trim();
   const dni = document.getElementById('na-dni').value.trim();
   const usuario = document.getElementById('na-user').value.trim().toLowerCase();
-  const password = document.getElementById('na-pass').value.trim();
+  const password = (document.getElementById('na-pass')?.value || '').trim() || dni;
   const fnac = document.getElementById('na-fnac').value;
   const stEsc = getEscaleraState('nuevo-atleta', null, false);
   const builtEsc = buildAtletaFieldsFromEscaleraState(stEsc);
@@ -6877,7 +7086,6 @@ window.saveNuevoAtleta = (e) => {
     apellido,
     dni,
     usuario,
-    password,
     fechaNacimiento: fnac,
     genero: document.getElementById('na-genero').value,
     categoria: document.getElementById('na-cat').value,
@@ -6896,8 +7104,7 @@ window.saveNuevoAtleta = (e) => {
             vinculo: 'Tutor/a',
             email: '',
             usuario: `familia.${primerApellidoSlug}`,
-            password: password,
-          }
+            }
         : undefined,
     ingreso: DB.hoy,
     antecedentes: 'Atleta de la Escuela Municipal de Atletismo Willilefche.',
@@ -7565,7 +7772,7 @@ window.saveNuevoResultado = (e, atletaId) => {
 function renderApp(preserveSearchFocus = false) {
   const hash = location.hash || '#/';
   const path = hash.slice(1) || '/';
-  const session = Auth.getSession();
+  const session = typeof Auth.verifyCurrentSession === 'function' ? Auth.verifyCurrentSession() : Auth.getSession();
   const app = document.getElementById('app');
   if (!app) return;
 
