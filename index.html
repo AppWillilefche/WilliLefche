@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Willilefche · Escuela Municipal de Valcheta</title>
+    <meta
+      name="description"
+      content="Entrenamos hoy, construimos mañana. Planes de entrenamiento, fichas de atletas, competencias, pagos y rankings de la Escuela Municipal de Valcheta."
+    />
+    <link rel="icon" type="image/jpeg" href="img/logo-willilefche.jpg" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#0f141c" />
+
+    <!-- Google Fonts: Barlow & Barlow Condensed -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap"
+    />
+
+    <!-- Tailwind CSS v4 Browser Engine -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+      @theme inline {
+        --font-sans: var(--font-body);
+        --font-display: var(--font-heading);
+        --color-background: var(--background);
+        --color-foreground: var(--foreground);
+        --color-card: var(--card);
+        --color-card-foreground: var(--card-foreground);
+        --color-popover: var(--popover);
+        --color-popover-foreground: var(--popover-foreground);
+        --color-primary: var(--primary);
+        --color-primary-foreground: var(--primary-foreground);
+        --color-secondary: var(--secondary);
+        --color-secondary-foreground: var(--secondary-foreground);
+        --color-muted: var(--muted);
+        --color-muted-foreground: var(--muted-foreground);
+        --color-accent: var(--accent);
+        --color-accent-foreground: var(--accent-foreground);
+        --color-destructive: var(--destructive);
+        --color-destructive-foreground: var(--destructive-foreground);
+        --color-border: var(--border);
+        --color-input: var(--input);
+        --color-ring: var(--ring);
+        --color-success: var(--success);
+        --color-success-soft: var(--success-soft);
+        --color-warning: var(--warning);
+        --color-warning-soft: var(--warning-soft);
+        --color-warning-text: var(--warning-text);
+        --color-ink: var(--ink);
+        --color-ink-foreground: var(--ink-foreground);
+        --color-brand-lime: var(--brand-lime);
+        --color-brand-blue: var(--brand-blue);
+        --color-sidebar: var(--sidebar);
+        --color-sidebar-foreground: var(--sidebar-foreground);
+        --color-sidebar-primary: var(--sidebar-primary);
+        --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+        --color-sidebar-accent: var(--sidebar-accent);
+        --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+        --color-sidebar-border: var(--sidebar-border);
+        --color-sidebar-ring: var(--sidebar-ring);
+      }
+    </style>
+
+    <!-- Estilos y variables del tema Willilefche -->
+    <link rel="stylesheet" href="css/styles.css" />
+
+    <!-- Íconos Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- SheetJS (Lectura y generación de archivos Excel .xlsx / .xls / .csv) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- Firebase 10.7.1 Compat SDK (App + Auth + Firestore con soporte Offline) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <!-- Módulos del Sistema Willilefche -->
+    <script src="js/firebase-config.js?v=1.14.4"></script>
+    <script src="js/auth.js?v=1.14.4"></script>
+    <script src="js/data.js?v=1.14.4"></script>
+    <script src="js/app.js?v=1.14.4"></script>
+
+    <!-- Service Worker para PWA y funcionamiento sin conexión -->
+    <script>
+      if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>

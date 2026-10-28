@@ -1,0 +1,16 @@
+{
+  "name": "Willilefche · Escuela Municipal de Valcheta",
+  "short_name": "Willilefche",
+  "description": "Entrenamos hoy, construimos mañana. Plataforma de gestión de la Escuela Municipal de Valcheta.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f141c",
+  "theme_color": "#0f141c",
+  "icons": [
+    {
+      "src": "img/logo-willilefche.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
