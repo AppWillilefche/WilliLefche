@@ -2688,6 +2688,10 @@ window.enviarMensajeIndividual = (e, atletaId) => {
 
 window.deleteSession = (atletaId, sesionId) => {
   DB.planes[atletaId] = (DB.planes[atletaId] || []).filter((s) => s.id !== sesionId);
+  DB.sesiones = (DB.sesiones || []).filter((s) => s.id !== sesionId);
+  if (window.CloudSync && typeof window.CloudSync.deleteDoc === 'function') {
+    window.CloudSync.deleteDoc('sesiones', sesionId);
+  }
   saveDB();
   showToast('Entrenamiento eliminado del plan');
   renderApp();
@@ -2802,6 +2806,9 @@ function viewCoachCompetencias() {
 window.deleteCompetencia = (id) => {
   if (!confirm('¿Eliminar esta competencia del calendario?')) return;
   DB.competencias = DB.competencias.filter((c) => c.id !== id);
+  if (window.CloudSync && typeof window.CloudSync.deleteDoc === 'function') {
+    window.CloudSync.deleteDoc('competencias', id);
+  }
   saveDB();
   showToast('Competencia eliminada');
   renderApp();
@@ -3400,7 +3407,7 @@ window.saveRegistrarPagoModal = (e, pagoId) => {
     showToast('Pago informado con éxito. Quedó en revisión para confirmación del entrenador.');
   }
 
-  saveDB();
+  saveDB({ type: 'pago', data: pago });
   closeModal();
   renderApp();
 };
@@ -3417,7 +3424,7 @@ window.confirmarPagoCoach = (pagoId) => {
   delete pago.rechazadoPor;
   delete pago.rechazadoEn;
 
-  saveDB();
+  saveDB({ type: 'pago', data: pago });
   showToast(`Pago de ${Helpers.pesos(pago.monto)} confirmado exitosamente.`);
   renderApp();
 };
@@ -3463,7 +3470,7 @@ window.confirmarRechazoPago = (e, pagoId) => {
   delete pago.confirmadoPor;
   delete pago.confirmadoEn;
 
-  saveDB();
+  saveDB({ type: 'pago', data: pago });
   closeModal();
   showToast('Comprobante rechazado. El cobro volvió a quedar como deuda con motivo.');
   renderApp();
@@ -3509,6 +3516,9 @@ window.verComprobanteModal = (pagoId) => {
 window.deletePago = (id) => {
   if (!confirm('¿Eliminar este cobro?')) return;
   DB.pagos = DB.pagos.filter((p) => p.id !== id);
+  if (window.CloudSync && typeof window.CloudSync.deleteDoc === 'function') {
+    window.CloudSync.deleteDoc('pagos', id);
+  }
   saveDB();
   showToast('Cobro eliminado');
   renderApp();
@@ -3617,6 +3627,9 @@ function viewCoachAvisos() {
 
 window.deleteAviso = (id) => {
   DB.avisos = DB.avisos.filter((a) => a.id !== id);
+  if (window.CloudSync && typeof window.CloudSync.deleteDoc === 'function') {
+    window.CloudSync.deleteDoc('avisos', id);
+  }
   saveDB();
   showToast('Aviso eliminado');
   renderApp();
