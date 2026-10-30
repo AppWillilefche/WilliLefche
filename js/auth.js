@@ -194,7 +194,25 @@ const Auth = {
     if (!session || !window.firebase || typeof window.firebase.auth !== 'function') return null;
     const auth = window.firebase.auth();
     if (auth.currentUser) return auth.currentUser;
-    return null;
+    // Esperar a que Firebase Auth termine de restaurar la sesión almacenada en IndexedDB
+    return new Promise((resolve) => {
+      let resolved = false;
+      const unsubscribe = auth.onAuthStateChanged((user) => {
+        if (!resolved) {
+          resolved = true;
+          try { unsubscribe(); } catch (e) {}
+          resolve(user);
+        }
+      });
+      // Timeout de seguridad por si no hay conexión de red
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          try { unsubscribe(); } catch (e) {}
+          resolve(auth.currentUser || null);
+        }
+      }, 2500);
+    });
   },
 
   async logout() {
@@ -203,9 +221,11 @@ const Auth = {
       if (window.firebase && typeof window.firebase.auth === 'function') {
         await window.firebase.auth().signOut().catch(() => {});
       }
-      if (window.CloudSync && window.CloudSync._unsubscribe) {
-        window.CloudSync._unsubscribe();
-        window.CloudSync._unsubscribe = null;
+      if (window.CloudSync && typeof window.CloudSync.stopSubscriptions === 'function') {
+        window.CloudSync.stopSubscriptions();
+      }
+      if (window.CloudSync && typeof window.CloudSync.dispatchSubscriptionByRole === 'function') {
+        window.CloudSync.dispatchSubscriptionByRole();
       }
     } catch (e) {}
     location.hash = '#/ingresar';
@@ -277,60 +297,45 @@ const Auth = {
       return { ok: false, error: 'Usuario o contraseña incorrectos. Verificá tus credenciales o consultá con el entrenador.' };
     }
 
-    // 3. Obtener o consolidar perfil seguro en Firestore 'usuarios/{uid}'
-    let userDoc = null;
-    if (window.firebase.firestore) {
+    // 3. Determinar rol y consolidar sesión
+    const isCoachOrAdmin = resolved.expectedRole === 'admin' || resolved.expectedRole === 'coach';
+    const role = isCoachOrAdmin ? 'coach' : (resolved.expectedRole === 'guardian' ? 'guardian' : 'athlete');
+    const subRole = resolved.expectedRole === 'admin' ? 'admin' : (isCoachOrAdmin ? 'coach' : null);
+
+    // Actualizar perfil en 'usuarios/{uid}' en segundo plano (sin bloquear el ingreso del usuario)
+    if (window.firebase && typeof window.firebase.firestore === 'function') {
       try {
         const db = window.firebase.firestore();
-        const docRef = db.collection('usuarios').doc(fbUser.uid);
-        const snap = await docRef.get().catch(() => null);
-        if (snap && snap.exists) {
-          userDoc = snap.data();
-        } else {
-          const roleToStore =
-            resolved.expectedRole === 'admin'
-              ? 'admin'
-              : resolved.expectedRole === 'coach'
-              ? 'entrenador'
-              : resolved.expectedRole === 'athlete'
-              ? 'atleta'
-              : 'familia';
-
-          userDoc = {
-            uid: fbUser.uid,
-            email: fbUser.email,
-            usuario: resolved.usuario || rawUser,
-            nombre: resolved.nombre || (resolved.expectedRole === 'coach' ? 'Cristian Javier Torres' : 'Atleta Willilefche'),
-            role: roleToStore,
-            atletaId: resolved.atletaId || null,
-            dni: resolved.dni || null,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-          };
-          await docRef.set(userDoc, { merge: true }).catch(() => {});
-        }
-      } catch (docErr) {
-        console.warn('Aviso sincronizando usuarios/{uid}:', docErr);
-      }
+        db.collection('usuarios').doc(fbUser.uid).set({
+          uid: fbUser.uid,
+          email: fbUser.email,
+          usuario: resolved.usuario || rawUser,
+          nombre: resolved.nombre || (isCoachOrAdmin ? 'Prof. Cristian Javier Torres' : 'Atleta Willilefche'),
+          role: isCoachOrAdmin ? (resolved.expectedRole === 'admin' ? 'admin' : 'entrenador') : (resolved.expectedRole === 'guardian' ? 'familia' : 'atleta'),
+          atletaId: resolved.atletaId || null,
+          updatedAt: Date.now(),
+        }, { merge: true }).catch(() => {});
+      } catch (e) {}
     }
-
-    // 4. Determinar rol verificado por servidor
-    const role = (userDoc && userDoc.role) || (resolved.expectedRole === 'coach' || resolved.expectedRole === 'admin' ? 'coach' : resolved.expectedRole === 'guardian' ? 'guardian' : 'athlete');
-    const isCoachOrAdmin = role === 'admin' || role === 'administrador' || role === 'entrenador' || role === 'coach' || resolved.expectedRole === 'admin' || resolved.expectedRole === 'coach';
 
     const session = {
       uid: fbUser.uid,
       authEmail: fbUser.email,
-      role: isCoachOrAdmin ? 'coach' : (role === 'familia' || role === 'guardian' ? 'guardian' : 'athlete'),
-      subRole: (role === 'admin' || role === 'administrador' || resolved.expectedRole === 'admin') ? 'admin' : (isCoachOrAdmin ? 'coach' : null),
-      usuario: (userDoc && userDoc.usuario) || resolved.usuario || rawUser,
-      nombre: (userDoc && userDoc.nombre) || resolved.nombre || fbUser.email,
-      atletaId: (userDoc && userDoc.atletaId) || resolved.atletaId || null,
+      role: role,
+      subRole: subRole,
+      usuario: resolved.usuario || rawUser,
+      nombre: resolved.nombre || (isCoachOrAdmin ? 'Prof. Cristian Javier Torres' : 'Atleta Willilefche'),
+      atletaId: resolved.atletaId || null,
       loginAt: Date.now(),
       tokenVerified: true,
     };
 
     this.setSession(session);
+
+    // Conectar inmediatamente la suscripción al rol verificado sin esperar race condition
+    if (window.CloudSync && typeof window.CloudSync.dispatchSubscriptionByRole === 'function') {
+      window.CloudSync.dispatchSubscriptionByRole();
+    }
 
     let redirect = '#/entrenador';
     if (session.role === 'athlete' && session.atletaId) {

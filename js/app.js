@@ -5,6 +5,10 @@
 
 const State = {
   rankingDistancia: '1500 m',
+  atletismoTab: 'general', // 'general' | 'epade' | 'evita' | 'araucania' | 'todo'
+  evitaCat: 'sub14', // 'sub14' | 'sub17'
+  editorAtletismoTab: 'epade', // 'general' | 'epade' | 'evita' | 'araucania'
+  editorEvitaCat: 'sub14', // 'sub14' | 'sub17' | 'vallas'
   rankingGenero: 'todos',
   atletasQuery: '',
   atletasCat: 'Todas',
@@ -319,6 +323,7 @@ function renderPublicHeader(activePath = '/') {
   const session = typeof Auth.verifyCurrentSession === 'function' ? Auth.verifyCurrentSession() : Auth.getSession();
   const links = [
     { to: '#/', path: '/', label: 'Inicio' },
+    { to: '#/atletismo', path: '/atletismo', label: 'Atletismo y Pruebas' },
     { to: '#/rankings', path: '/rankings', label: 'Rankings' },
     { to: '#/competencias', path: '/competencias', label: 'Calendario' },
   ];
@@ -356,10 +361,24 @@ function renderPublicHeader(activePath = '/') {
             .join('')}
         </nav>
         <div class="flex items-center gap-2">
+          <div data-cloud-badge>${CloudSync.renderBadgeHtml()}</div>
           <a href="${ctaHref}" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-xs hover:opacity-95">
             ${ctaLabel}
           </a>
         </div>
+      </div>
+      <div class="flex md:hidden items-center gap-1 overflow-x-auto px-4 py-2 border-t bg-muted/30 scrollbar-none text-xs">
+        ${links
+          .map(
+            (l) => `
+          <a href="${l.to}" class="whitespace-nowrap rounded-md px-2.5 py-1 font-medium transition-colors ${
+              activePath === l.path ? 'bg-primary text-primary-foreground font-bold shadow-2xs' : 'text-muted-foreground hover:text-foreground'
+            }">
+            ${l.label}
+          </a>
+        `
+          )
+          .join('')}
       </div>
     </header>
   `;
@@ -369,10 +388,22 @@ function renderPublicFooter() {
   return `
     <footer class="border-t bg-ink text-ink-foreground">
       <div class="mx-auto flex max-w-content flex-col gap-6 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        ${renderLogo({ invert: true })}
-        <p class="text-sm text-ink-foreground/70">
-          Los rankings públicos muestran solo nombre, categoría, edad y marcas. Los datos personales son privados.
-        </p>
+        <div>
+          ${renderLogo({ invert: true })}
+          <p class="mt-2 text-xs text-ink-foreground/60 max-w-md">
+            Escuela Municipal de Atletismo Willilefche · Valcheta, Río Negro.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-ink-foreground/80">
+          <a href="#/" class="hover:text-ink-foreground">Inicio</a>
+          <a href="#/atletismo" class="hover:text-ink-foreground">Atletismo y Pruebas</a>
+          <a href="#/rankings" class="hover:text-ink-foreground">Rankings</a>
+          <a href="#/competencias" class="hover:text-ink-foreground">Calendario</a>
+          <a href="#/ingresar" class="text-primary hover:underline">Acceso</a>
+        </div>
+      </div>
+      <div class="border-t border-white/10 py-4 text-center text-xs text-ink-foreground/50">
+        Los rankings públicos muestran solo nombre, categoría, edad y marcas. Los datos personales y de salud son estrictamente privados.
       </div>
     </footer>
   `;
@@ -445,6 +476,9 @@ function viewHome() {
             <div class="mt-8 flex flex-wrap gap-3">
               <a href="#/ingresar" class="inline-flex h-12 items-center gap-2 rounded-lg bg-primary px-6 text-base font-semibold text-primary-foreground shadow-sm hover:opacity-95">
                 Ingresar a mi cuenta <i data-lucide="arrow-right" class="size-4"></i>
+              </a>
+              <a href="#/atletismo" class="inline-flex h-12 items-center gap-2 rounded-lg border border-white/30 bg-transparent px-6 text-base font-semibold text-ink-foreground hover:bg-white/10">
+                <i data-lucide="book-open" class="size-4"></i> Guía de Atletismo y Pruebas
               </a>
               <a href="#/rankings" class="inline-flex h-12 items-center gap-2 rounded-lg border border-white/30 bg-transparent px-6 text-base font-semibold text-ink-foreground hover:bg-white/10">
                 <i data-lucide="trophy" class="size-4"></i> Ver rankings
@@ -773,6 +807,1666 @@ function viewCompetenciasPublic() {
   `;
 }
 
+/* ---------- Datos Oficiales de Torneos y Contenidos de Atletismo ---------- */
+const PROGRAMAS_TORNEOS_DEFAULT = {
+  worldAthletics: {
+    concepto: 'El atletismo es el deporte organizado más antiguo de la humanidad y la base motriz de toda actividad física. Regulado en el mundo por World Athletics, agrupa disciplinas que perfeccionan los movimientos elementales del ser humano: correr, saltar y lanzar. Las competencias oficiales se dividen en dos grandes escenarios complementarios: las Pruebas de Pista y las Pruebas de Campo, coronadas por las Pruebas Combinadas que premian al atleta más versátil y completo.',
+    pistaVelocidadTitulo: 'Velocidad y Relevos',
+    pistaVelocidadTexto: 'Pruebas de aceleración explosiva y máxima frecuencia de zancada. Salida baja con tacos reglamentarios (starting blocks) y carriles propios. Incluye 60m, 80m, 100m, 150m, 200m, 300m, 400m, vallas (80m, 100m, 110m, 295m, 400m) y postas (4x100m, 5x80m y postas combinadas).',
+    pistaMediofondoTitulo: 'Medio Fondo y Obstáculos',
+    pistaMediofondoTexto: 'Fusión equilibrada de velocidad sostenida y resistencia aeróbica-láctica. Partida de pie en curva, confluencia rápida a calle libre y alta demanda táctica. Distancias típicas: 600m, 800m, 1.200m, 1.500m, 2.400m y pruebas con obstáculos (1.500m, 2.000m y 3.000m) con vallas fijas y fosa de agua (ría).',
+    pistaFondoTitulo: 'Fondo y Marcha Atlética',
+    pistaFondoTexto: 'Pruebas de máxima capacidad cardiovascular, dosificación del esfuerzo y economía de carrera sobre distancias largas en pista y ruta (2.000m, 3.000m, 5.000m, 10.000m y pruebas pedestres de ruta 5k y 6k). La marcha atlética exige paso veloz con contacto visual ininterrumpido con el suelo y rodilla extendida en el apoyo.',
+    campoSaltosTitulo: 'Saltos (Horizontales y Verticales)',
+    campoSaltosTexto: 'Desafíos de coordinación neuromuscular y batida explosiva. Incluye Salto en Largo (aproximación y caída en foso de arena), Salto Triple (hop, step y jump en velocidad), Salto en Alto (estilo dorsal Fosbury Flop sobre varilla elevada) y Salto con Garrocha (pértiga flexible).',
+    campoLanzamientosTitulo: 'Lanzamientos',
+    campoLanzamientosTexto: 'Pruebas de potencia dinámica y transmisión de palancas musculares dentro del sector de caída: Bala (empuje desde el cuello en círculo de 2,135m), Disco (lanzamiento centrífugo rotacional), Jabalina (aproximación frontal lineal) y Martillo (aceleración por giros continuos en jaula).',
+    campoCombinadasTitulo: 'Pruebas Combinadas (Pentatlón, Hexátlon, Heptatlón y Decatlón)',
+    campoCombinadasTexto: 'Consagran a los atletas más completos. Cada participante compite sucesivamente en carreras, saltos y lanzamientos a lo largo de una o dos jornadas. El rendimiento en cada prueba se traduce en puntos según las Tablas Oficiales de Puntuación de World Athletics.',
+  },
+  epade: {
+    nombre: 'Juegos EPADE',
+    subtitulo: 'Sub-17 · XIX Edición (Mayo 2026, Neuquén)',
+    descripcion: 'Torneo anual del Ente Patagónico Deportivo (EPADE) para selecciones provinciales de 13 a 17 años (Río Negro, Neuquén, Chubut, Santa Cruz, Tierra del Fuego y La Pampa).',
+    sede: 'Ciudad Deportiva de Neuquén',
+    edicion: 'XIX Edición · Mayo 2026',
+    notaReglamento: 'Programa preliminar tomado del cronograma oficial y resultados difundidos por la prensa. Los reglamentos técnicos específicos pueden ajustar pesos e implementos por edición.',
+    pruebas: [
+      { tipo: 'Pista', prueba: '80 m llanos', fem: 'Sí', masc: 'Sí', nota: 'Velocidad corta' },
+      { tipo: 'Pista', prueba: '200 m llanos', fem: 'Sí', masc: 'Sí', nota: 'Figura en cronograma oficial; sin confirmar si es individual' },
+      { tipo: 'Pista', prueba: '300 m llanos', fem: 'Sí', masc: 'Sí', nota: 'Velocidad prolongada' },
+      { tipo: 'Pista', prueba: '600 m llanos', fem: 'Sí', masc: 'Sí', nota: 'Medio fondo' },
+      { tipo: 'Pista', prueba: '800 m llanos', fem: 'Sin confirmar', masc: 'Sí', nota: 'Medio fondo' },
+      { tipo: 'Pista', prueba: '2.400 m llanos', fem: 'Sí', masc: 'Sí', nota: 'Fondo en pista' },
+      { tipo: 'Pista', prueba: '1.500 m con obstáculos', fem: 'Sí', masc: 'Sí', nota: 'Con fosa de agua (ría)' },
+      { tipo: 'Pista', prueba: '80 m con vallas', fem: 'Sí', masc: '—', nota: 'Rama femenina (altura no publicada)' },
+      { tipo: 'Pista', prueba: '110 m con vallas', fem: '—', masc: 'Sí', nota: 'Rama masculina (altura no publicada)' },
+      { tipo: 'Pista', prueba: '295 m con vallas', fem: 'Sí', masc: 'Sí', nota: 'Vallas intermedias / largas' },
+      { tipo: 'Pista', prueba: 'Posta 4x100', fem: 'Sí', masc: 'Sí', nota: '4 relevistas x 100 metros' },
+      { tipo: 'Pista', prueba: 'Posta combinada', fem: 'Sí', masc: 'Sí', nota: 'Relevos suecos/combinados (distancias no publicadas)' },
+      { tipo: 'Campo', prueba: 'Salto en alto', fem: 'Sí', masc: 'Sí', nota: 'Varilla y colchoneta (Fosbury Flop)' },
+      { tipo: 'Campo', prueba: 'Salto en largo', fem: 'Sí', masc: 'Sí', nota: 'Tabla de batida y foso de arena' },
+      { tipo: 'Campo', prueba: 'Salto triple', fem: 'Sí', masc: 'Sí', nota: 'Tres apoyos técnicos consecutivos (hop, step, jump)' },
+      { tipo: 'Campo', prueba: 'Lanzamiento de bala', fem: 'Sí', masc: 'Sí', nota: 'Masc. 4 kg; fem. sin dato publicado' },
+      { tipo: 'Campo', prueba: 'Lanzamiento de disco', fem: 'Sí', masc: 'Sí', nota: 'Lanzamiento rotacional desde jaula' },
+      { tipo: 'Campo', prueba: 'Lanzamiento de jabalina', fem: 'Sí', masc: 'Sí', nota: 'Aproximación lineal reglamentaria' },
+      { tipo: 'Campo', prueba: 'Lanzamiento de martillo', fem: 'Sí', masc: 'Sí', nota: '4 kg (rama no especificada en cronograma)' },
+      { tipo: 'Combinada', prueba: 'Hexátlon', fem: 'Sí', masc: '—', nota: 'Incluye 80 m c/v, alto y bala (resto de pruebas no publicado)' },
+      { tipo: 'Combinada', prueba: 'Heptátlon', fem: '—', masc: 'Sí', nota: 'Pruebas combinadas masculinas (composición no publicada)' },
+    ]
+  },
+  evitaSub14: {
+    nombre: 'Juegos Nacionales Evita · Sub-14',
+    subtitulo: 'Reglamento Deportivo Juveniles (Secretaría de Deportes de la Nación)',
+    regla: 'Máximo por atleta: 2 pruebas individuales + posta, o 1 prueba combinada + posta.',
+    pruebas: [
+      { tipo: 'Pista', prueba: '80 m llanos', fem: 'Sí', masc: 'Sí', nota: 'Velocidad pura' },
+      { tipo: 'Pista', prueba: '150 m llanos', fem: 'Sí', masc: 'Sí', nota: 'Curva y recta en velocidad' },
+      { tipo: 'Pista', prueba: '800 m llanos', fem: 'Sí', masc: 'Sí', nota: 'Medio fondo' },
+      { tipo: 'Pista', prueba: '2.000 m llanos', fem: 'Sí', masc: 'Sí', nota: 'Fondo' },
+      { tipo: 'Pista', prueba: 'Vallas', fem: '80 m', masc: '100 m', nota: 'Fem 0,76 m (8 vallas) · Masc 0,84 m (10 vallas)' },
+      { tipo: 'Pista', prueba: 'Marcha atlética', fem: '3.000 m', masc: '4.000 m', nota: 'Reglamentaria en pista con contacto continuo' },
+      { tipo: 'Pista', prueba: 'Posta 5x80 m', fem: 'Sí', masc: 'Sí', nota: '5 corredores x 80 metros cada uno' },
+      { tipo: 'Campo', prueba: 'Salto en alto', fem: 'Sí', masc: 'Sí', nota: 'Estilo dorsal sobre varilla' },
+      { tipo: 'Campo', prueba: 'Salto en largo', fem: 'Sí', masc: 'Sí', nota: 'Batida sobre tabla a foso de arena' },
+      { tipo: 'Campo', prueba: 'Lanzamiento de bala', fem: '3 kg', masc: '4 kg', nota: 'Empuje desde el cuello (círculo 2,135 m)' },
+      { tipo: 'Campo', prueba: 'Lanzamiento de disco', fem: '0,750 kg', masc: '1 kg', nota: 'Lanzamiento centrífugo reglamentario' },
+      { tipo: 'Campo', prueba: 'Lanzamiento de jabalina', fem: '400 g', masc: '600 g', nota: 'Empuñadura encordada y carrera de impulso' },
+      { tipo: 'Campo', prueba: 'Lanzamiento de martillo', fem: '3 kg', masc: '4 kg', nota: 'Cabeza de acero con cable reglamentario' },
+      { tipo: 'Combinada', prueba: 'Pentátlon fem.', fem: 'Sí', masc: '—', nota: '80 m c/vallas, salto en alto, bala, largo y 600 m llanos' },
+      { tipo: 'Combinada', prueba: 'Hexátlon masc.', fem: '—', masc: 'Sí', nota: '100 m c/vallas, salto en largo, bala, alto, jabalina y 800 m llanos' },
+    ]
+  },
+  evitaSub17: {
+    nombre: 'Juegos Nacionales Evita · Sub-17',
+    subtitulo: 'Reglamento Deportivo Juveniles (Secretaría de Deportes de la Nación)',
+    regla: 'Máximo por atleta: 2 pruebas individuales + posta, o 1 prueba combinada + posta.',
+    pruebas: [
+      { tipo: 'Pista', prueba: '100 m llanos', fem: 'Sí', masc: 'Sí', nota: 'Velocidad pura en recta' },
+      { tipo: 'Pista', prueba: '300 m llanos', fem: 'Sí', masc: 'Sí', nota: 'Velocidad prolongada' },
+      { tipo: 'Pista', prueba: '800 m llanos', fem: 'Sí', masc: 'Sí', nota: 'Medio fondo' },
+      { tipo: 'Pista', prueba: '3.000 m llanos', fem: 'Sí', masc: 'Sí', nota: 'Fondo' },
+      { tipo: 'Pista', prueba: 'Vallas cortas', fem: '100 m', masc: '110 m', nota: 'Fem 0,76 m (10 vallas) · Masc 0,84 m (10 vallas)' },
+      { tipo: 'Pista', prueba: '295 m con vallas', fem: 'Sí', masc: 'Sí', nota: 'Ambas ramas 0,76 m (7 vallas)' },
+      { tipo: 'Pista', prueba: 'Marcha atlética', fem: '3.000 m', masc: '4.000 m', nota: 'Reglamentaria en pista' },
+      { tipo: 'Pista', prueba: 'Posta 4x100 m', fem: 'Sí', masc: 'Sí', nota: 'Relevos de máxima velocidad' },
+      { tipo: 'Campo', prueba: 'Salto en alto', fem: 'Sí', masc: 'Sí', nota: 'Superación vertical de listón' },
+      { tipo: 'Campo', prueba: 'Salto en largo', fem: 'Sí', masc: 'Sí', nota: 'Aproximación en velocidad y caída en arena' },
+      { tipo: 'Campo', prueba: 'Salto triple', fem: 'Sí', masc: 'Sí', nota: 'Regla especial: máximo 9 pasos de aproximación, partida quieta' },
+      { tipo: 'Campo', prueba: 'Lanzamiento de bala', fem: '3 kg', masc: '5 kg', nota: 'Implementos reglamentarios Sub-17' },
+      { tipo: 'Campo', prueba: 'Lanzamiento de disco', fem: '1 kg', masc: '1,5 kg', nota: 'Implementos reglamentarios Sub-17' },
+      { tipo: 'Campo', prueba: 'Lanzamiento de jabalina', fem: '500 g', masc: '700 g', nota: 'Implementos reglamentarios Sub-17' },
+      { tipo: 'Campo', prueba: 'Lanzamiento de martillo', fem: '3 kg', masc: '5 kg', nota: 'Implementos reglamentarios Sub-17' },
+      { tipo: 'Combinada', prueba: 'Hexátlon fem.', fem: 'Sí', masc: '—', nota: '100 m c/vallas, alto, bala, largo, jabalina y 800 m llanos' },
+      { tipo: 'Combinada', prueba: 'Heptátlon masc.', fem: '—', masc: 'Sí', nota: '110 m c/vallas, largo, bala, 200 m, alto, jabalina y 800 m llanos' },
+    ]
+  },
+  evitaVallas: [
+    { prueba: '80 m fem. Sub-14', altura: '0,76 m', al1: '12,50 m', entre: '8,00 m', total: 8 },
+    { prueba: '100 m masc. Sub-14', altura: '0,84 m', al1: '13,00 m', entre: '8,50 m', total: 10 },
+    { prueba: '100 m fem. Sub-17', altura: '0,76 m', al1: '13,00 m', entre: '8,50 m', total: 10 },
+    { prueba: '110 m masc. Sub-17', altura: '0,84 m', al1: '13,72 m', entre: '9,14 m', total: 10 },
+    { prueba: '295 m fem. y masc. Sub-17', altura: '0,76 m', al1: '45,00 m', entre: '35,00 m', total: 7 },
+  ],
+  araucania: {
+    nombre: 'Juegos Binacionales de la Araucanía',
+    subtitulo: 'Edición 2025 · Santa Rosa (La Pampa), 7 al 11 de diciembre',
+    descripcion: 'Encuentro deportivo y cultural que hermana a las 6 regiones del sur de Chile y las 6 provincias patagónicas argentinas (La Pampa, Río Negro, Neuquén, Chubut, Santa Cruz y Tierra del Fuego). Cuenta con 17 pruebas por rama.',
+    particularidad: 'El programa 2025 no incluye pruebas combinadas, marcha atlética ni obstáculos. Los pesos de los implementos de lanzamientos masculinos corresponden a la categoría Sub-20.',
+    pruebas: [
+      { tipo: 'Pista', prueba: '100 m llanos', fem: 'Sí', masc: 'Sí', nota: 'Velocidad' },
+      { tipo: 'Pista', prueba: '200 m llanos', fem: 'Sí', masc: 'Sí', nota: 'Velocidad' },
+      { tipo: 'Pista', prueba: '400 m llanos', fem: 'Sí', masc: 'Sí', nota: 'Velocidad prolongada' },
+      { tipo: 'Pista', prueba: '800 m llanos', fem: 'Sí', masc: 'Sí', nota: 'Medio fondo' },
+      { tipo: 'Pista', prueba: '1.500 m llanos', fem: 'Sí', masc: 'Sí', nota: 'Medio fondo' },
+      { tipo: 'Pista', prueba: 'Fondo en pista', fem: '3.000 m', masc: '5.000 m', nota: 'Prueba de resistencia aeróbica en pista' },
+      { tipo: 'Pista', prueba: 'Vallas cortas', fem: '100 m', masc: '110 m', nota: 'Alturas de vallas reglamentarias' },
+      { tipo: 'Pista', prueba: '400 m con vallas', fem: 'Sí', masc: 'Sí', nota: 'Vuelta completa a la pista con vallas' },
+      { tipo: 'Pista', prueba: 'Posta 4x100 m', fem: 'Sí', masc: 'Sí', nota: 'Relevos en velocidad' },
+      { tipo: 'Ruta', prueba: 'Prueba pedestre', fem: '5 km', masc: '6 km', nota: 'Carrera pedestre en circuito callejero / ruta' },
+      { tipo: 'Campo', prueba: 'Salto en alto', fem: 'Sí', masc: 'Sí', nota: 'Listón y colchoneta' },
+      { tipo: 'Campo', prueba: 'Salto en largo', fem: 'Sí', masc: 'Sí', nota: 'Tabla y fosa de arena' },
+      { tipo: 'Campo', prueba: 'Salto triple', fem: 'Sí', masc: 'Sí', nota: 'Hop, step y jump reglamentario' },
+      { tipo: 'Campo', prueba: 'Lanzamiento de bala', fem: '4 kg', masc: '6 kg', nota: 'Peso masculino Sub-20' },
+      { tipo: 'Campo', prueba: 'Lanzamiento de disco', fem: '1 kg', masc: '1,750 kg', nota: 'Peso masculino Sub-20' },
+      { tipo: 'Campo', prueba: 'Lanzamiento de jabalina', fem: '600 g', masc: '800 g', nota: 'Lanza reglamentaria' },
+      { tipo: 'Campo', prueba: 'Lanzamiento de martillo', fem: '4 kg', masc: '6 kg', nota: 'Peso masculino Sub-20' },
+    ]
+  }
+};
+
+window.PROGRAMAS_TORNEOS_DEFAULT = PROGRAMAS_TORNEOS_DEFAULT;
+
+function getProgramasTorneos() {
+  if (window.DB && window.DB.programasTorneos && typeof window.DB.programasTorneos === 'object' && Object.keys(window.DB.programasTorneos).length > 0) {
+    // Asegurar que contenga las ramas principales
+    if (!window.DB.programasTorneos.worldAthletics) {
+      window.DB.programasTorneos.worldAthletics = JSON.parse(JSON.stringify(PROGRAMAS_TORNEOS_DEFAULT.worldAthletics));
+    }
+    return window.DB.programasTorneos;
+  }
+  if (window.DB) {
+    window.DB.programasTorneos = JSON.parse(JSON.stringify(PROGRAMAS_TORNEOS_DEFAULT));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
+    } catch (e) {}
+    return window.DB.programasTorneos;
+  }
+  return JSON.parse(JSON.stringify(PROGRAMAS_TORNEOS_DEFAULT));
+}
+window.getProgramasTorneos = getProgramasTorneos;
+
+window.setAtletismoTab = function(tab) {
+  State.atletismoTab = tab;
+  renderApp();
+};
+
+window.setEvitaCat = function(cat) {
+  State.evitaCat = cat;
+  renderApp();
+};
+
+window.setEditorAtletismoTab = function(tab) {
+  State.editorAtletismoTab = tab;
+  renderApp();
+};
+
+window.setEditorEvitaCat = function(cat) {
+  State.editorEvitaCat = cat;
+  renderApp();
+};
+
+function renderBadgeCheck(val) {
+  if (!val || val === '—') {
+    return '<span class="text-muted-foreground/40 font-bold">—</span>';
+  }
+  if (val.toLowerCase() === 'sí' || val.toLowerCase() === 'si') {
+    return '<span class="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400"><i data-lucide="check" class="size-3.5"></i> Sí</span>';
+  }
+  if (val.toLowerCase().includes('sin')) {
+    return `<span class="inline-flex items-center gap-1 rounded bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">${esc(val)}</span>`;
+  }
+  return `<span class="font-semibold text-foreground">${esc(val)}</span>`;
+}
+
+/* ==========================================================================
+   VISTA PÚBLICA DE ATLETISMO (World Athletics + EPADE + Evita + Araucanía)
+   ========================================================================== */
+function viewAtletismo() {
+  const currentTab = State.atletismoTab || 'general';
+  const data = getProgramasTorneos();
+  const session = typeof Auth.verifyCurrentSession === 'function' ? Auth.verifyCurrentSession() : Auth.getSession();
+  const isCoachOrAdmin = Boolean(session && (session.role === 'coach' || session.subRole === 'admin'));
+
+  const tabs = [
+    { id: 'general', label: '¿Qué es el Atletismo?', icon: 'award' },
+    { id: 'epade', label: 'Juegos EPADE', icon: 'mountain' },
+    { id: 'evita', label: 'Juegos Evita', icon: 'trophy' },
+    { id: 'araucania', label: 'Juegos Araucanía', icon: 'globe' },
+    { id: 'todo', label: 'Ver Todo', icon: 'layers' },
+  ];
+
+  const wa = data.worldAthletics || PROGRAMAS_TORNEOS_DEFAULT.worldAthletics;
+
+  const renderWorldAthletics = () => `
+    <section class="space-y-8">
+      <div class="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-card via-card to-primary/5 p-6 sm:p-8">
+        <div class="flex items-center gap-2 text-primary">
+          <i data-lucide="book-open" class="size-5"></i>
+          <span class="text-xs font-bold uppercase tracking-wider">Concepto Oficial · World Athletics</span>
+        </div>
+        <h2 class="mt-2 font-display text-3xl font-extrabold uppercase sm:text-4xl">¿Qué es el Atletismo?</h2>
+        <p class="mt-4 max-w-3xl text-base text-muted-foreground leading-relaxed">
+          ${esc(wa.concepto)}
+        </p>
+      </div>
+
+      <div class="space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <i data-lucide="timer" class="size-5"></i>
+          </div>
+          <div>
+            <h3 class="font-display text-2xl font-bold uppercase">1. Pruebas de Pista</h3>
+            <p class="text-sm text-muted-foreground">Disputadas en el anillo de tartán de 400 metros con carriles asignados y recta principal.</p>
+          </div>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-3">
+          <div class="rounded-xl border bg-card p-5 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                Potencia Pura
+              </span>
+              <i data-lucide="zap" class="size-4 text-emerald-500"></i>
+            </div>
+            <h4 class="text-lg font-bold">${esc(wa.pistaVelocidadTitulo || 'Velocidad y Relevos')}</h4>
+            <p class="text-xs text-muted-foreground leading-relaxed">${esc(wa.pistaVelocidadTexto || '')}</p>
+          </div>
+
+          <div class="rounded-xl border bg-card p-5 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-400">
+                Ritmo y Táctica
+              </span>
+              <i data-lucide="gauge" class="size-4 text-blue-500"></i>
+            </div>
+            <h4 class="text-lg font-bold">${esc(wa.pistaMediofondoTitulo || 'Medio Fondo y Obstáculos')}</h4>
+            <p class="text-xs text-muted-foreground leading-relaxed">${esc(wa.pistaMediofondoTexto || '')}</p>
+          </div>
+
+          <div class="rounded-xl border bg-card p-5 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="inline-flex items-center gap-1 rounded-full bg-purple-500/10 px-2.5 py-0.5 text-xs font-bold text-purple-700 dark:text-purple-400">
+                Resistencia
+              </span>
+              <i data-lucide="flame" class="size-4 text-purple-500"></i>
+            </div>
+            <h4 class="text-lg font-bold">${esc(wa.pistaFondoTitulo || 'Fondo y Marcha Atlética')}</h4>
+            <p class="text-xs text-muted-foreground leading-relaxed">${esc(wa.pistaFondoTexto || '')}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="flex size-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400">
+            <i data-lucide="medal" class="size-5"></i>
+          </div>
+          <div>
+            <h3 class="font-display text-2xl font-bold uppercase">2. Pruebas de Campo</h3>
+            <p class="text-sm text-muted-foreground">Disputadas en el interior del óvalo y pasillos especiales (saltos y lanzamientos).</p>
+          </div>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2">
+          <div class="rounded-xl border bg-card p-5 space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="text-lg font-bold flex items-center gap-2">
+                <i data-lucide="chevrons-up" class="size-4 text-amber-500"></i> ${esc(wa.campoSaltosTitulo || 'Saltos')}
+              </h4>
+              <span class="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">Impulso y Técnica</span>
+            </div>
+            <p class="text-xs text-muted-foreground leading-relaxed">${esc(wa.campoSaltosTexto || '')}</p>
+          </div>
+
+          <div class="rounded-xl border bg-card p-5 space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="text-lg font-bold flex items-center gap-2">
+                <i data-lucide="target" class="size-4 text-primary"></i> ${esc(wa.campoLanzamientosTitulo || 'Lanzamientos')}
+              </h4>
+              <span class="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">Palanca y Rotación</span>
+            </div>
+            <p class="text-xs text-muted-foreground leading-relaxed">${esc(wa.campoLanzamientosTexto || '')}</p>
+          </div>
+        </div>
+
+        <div class="rounded-xl border bg-muted/40 p-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <span class="text-xs font-bold uppercase text-primary tracking-wider">La Corona Atlética</span>
+              <h4 class="text-lg font-bold">${esc(wa.campoCombinadasTitulo || 'Pruebas Combinadas')}</h4>
+            </div>
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+              <i data-lucide="award" class="size-4"></i> Atletas Integrales
+            </span>
+          </div>
+          <p class="mt-2 text-xs text-muted-foreground leading-relaxed">${esc(wa.campoCombinadasTexto || '')}</p>
+        </div>
+      </div>
+    </section>
+  `;
+
+  const renderEpade = () => {
+    const ep = data.epade || PROGRAMAS_TORNEOS_DEFAULT.epade;
+    return `
+      <section class="space-y-6">
+        <div class="rounded-2xl border bg-card p-6">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+              ${esc(ep.edicion)}
+            </span>
+            <span class="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+              ${esc(ep.sede)}
+            </span>
+          </div>
+          <h2 class="mt-3 font-display text-3xl font-extrabold uppercase sm:text-4xl">${esc(ep.nombre)}</h2>
+          <p class="mt-2 text-sm text-muted-foreground leading-relaxed">${esc(ep.descripcion)}</p>
+          <p class="mt-3 inline-flex items-center gap-2 text-xs text-muted-foreground/80 bg-muted/50 p-2.5 rounded-lg border">
+            <i data-lucide="info" class="size-4 text-primary shrink-0"></i>
+            <span>${esc(ep.notaReglamento)}</span>
+          </p>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border bg-card shadow-2xs">
+          <table class="w-full text-left text-sm">
+            <thead class="border-b bg-muted/50 text-xs font-bold uppercase text-muted-foreground">
+              <tr>
+                <th class="px-4 py-3">Tipo</th>
+                <th class="px-4 py-3">Prueba</th>
+                <th class="px-4 py-3 text-center">Femenino</th>
+                <th class="px-4 py-3 text-center">Masculino</th>
+                <th class="px-4 py-3">Especificación / Observación</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y">
+              ${(ep.pruebas || [])
+                .map(
+                  (p) => `
+                <tr class="hover:bg-muted/30 transition-colors">
+                  <td class="px-4 py-3">
+                    <span class="inline-block rounded px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-wider ${
+                      p.tipo === 'Pista'
+                        ? 'bg-primary/10 text-primary'
+                        : p.tipo === 'Campo'
+                        ? 'bg-amber-500/10 text-amber-800 dark:text-amber-300'
+                        : 'bg-purple-500/10 text-purple-700 dark:text-purple-300'
+                    }">
+                      ${esc(p.tipo)}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 font-semibold text-foreground">${esc(p.prueba)}</td>
+                  <td class="px-4 py-3 text-center">${renderBadgeCheck(p.fem)}</td>
+                  <td class="px-4 py-3 text-center">${renderBadgeCheck(p.masc)}</td>
+                  <td class="px-4 py-3 text-xs text-muted-foreground">${esc(p.nota)}</td>
+                </tr>
+              `
+                )
+                .join('')}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    `;
+  };
+
+  const renderEvita = () => {
+    const isSub17 = State.evitaCat === 'sub17';
+    const ev = isSub17
+      ? (data.evitaSub17 || PROGRAMAS_TORNEOS_DEFAULT.evitaSub17)
+      : (data.evitaSub14 || PROGRAMAS_TORNEOS_DEFAULT.evitaSub14);
+    const vallas = data.evitaVallas || PROGRAMAS_TORNEOS_DEFAULT.evitaVallas;
+
+    return `
+      <section class="space-y-6">
+        <div class="rounded-2xl border bg-card p-6">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <span class="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+                Nacional · Argentina
+              </span>
+              <h2 class="mt-2 font-display text-3xl font-extrabold uppercase sm:text-4xl">Juegos Nacionales Evita</h2>
+              <p class="text-sm text-muted-foreground">${esc(ev.subtitulo)}</p>
+            </div>
+            <div class="flex rounded-lg bg-muted p-1 border">
+              <button
+                type="button"
+                onclick="setEvitaCat('sub14')"
+                class="rounded-md px-4 py-1.5 text-xs font-bold transition-all ${
+                  !isSub17 ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+                }"
+              >
+                Categoría Sub-14
+              </button>
+              <button
+                type="button"
+                onclick="setEvitaCat('sub17')"
+                class="rounded-md px-4 py-1.5 text-xs font-bold transition-all ${
+                  isSub17 ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+                }"
+              >
+                Categoría Sub-17
+              </button>
+            </div>
+          </div>
+          <p class="mt-4 text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20">
+            <i data-lucide="check-circle" class="size-4 inline mr-1"></i>
+            <strong>Reglamentación por atleta:</strong> ${esc(ev.regla)}
+          </p>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border bg-card shadow-2xs">
+          <table class="w-full text-left text-sm">
+            <thead class="border-b bg-muted/50 text-xs font-bold uppercase text-muted-foreground">
+              <tr>
+                <th class="px-4 py-3">Tipo</th>
+                <th class="px-4 py-3">Prueba</th>
+                <th class="px-4 py-3 text-center">Femenino</th>
+                <th class="px-4 py-3 text-center">Masculino</th>
+                <th class="px-4 py-3">Especificación / Implementos</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y">
+              ${(ev.pruebas || [])
+                .map(
+                  (p) => `
+                <tr class="hover:bg-muted/30 transition-colors">
+                  <td class="px-4 py-3">
+                    <span class="inline-block rounded px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-wider ${
+                      p.tipo === 'Pista'
+                        ? 'bg-primary/10 text-primary'
+                        : p.tipo === 'Campo'
+                        ? 'bg-amber-500/10 text-amber-800 dark:text-amber-300'
+                        : 'bg-purple-500/10 text-purple-700 dark:text-purple-300'
+                    }">
+                      ${esc(p.tipo)}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 font-semibold text-foreground">${esc(p.prueba)}</td>
+                  <td class="px-4 py-3 text-center">${renderBadgeCheck(p.fem)}</td>
+                  <td class="px-4 py-3 text-center">${renderBadgeCheck(p.masc)}</td>
+                  <td class="px-4 py-3 text-xs text-muted-foreground">${esc(p.nota)}</td>
+                </tr>
+              `
+                )
+                .join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="rounded-xl border bg-card p-5 space-y-4">
+          <div class="flex items-center gap-2">
+            <i data-lucide="sliders" class="size-5 text-primary"></i>
+            <div>
+              <h3 class="font-display text-xl font-bold uppercase">Especificaciones Técnicas de Vallas (Sub-14 y Sub-17)</h3>
+              <p class="text-xs text-muted-foreground">Alturas reglamentarias y distancias métricas oficiales.</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto rounded-lg border">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-muted/60 text-muted-foreground font-semibold border-b">
+                <tr>
+                  <th class="px-3.5 py-2.5">Prueba</th>
+                  <th class="px-3.5 py-2.5">Altura</th>
+                  <th class="px-3.5 py-2.5">Hasta 1ª valla</th>
+                  <th class="px-3.5 py-2.5">Entre vallas</th>
+                  <th class="px-3.5 py-2.5 text-center">Nº de vallas</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y">
+                ${(vallas || [])
+                  .map(
+                    (v) => `
+                  <tr class="hover:bg-muted/20">
+                    <td class="px-3.5 py-2 font-bold text-foreground">${esc(v.prueba)}</td>
+                    <td class="px-3.5 py-2 font-mono">${esc(v.altura)}</td>
+                    <td class="px-3.5 py-2 font-mono">${esc(v.al1)}</td>
+                    <td class="px-3.5 py-2 font-mono">${esc(v.entre)}</td>
+                    <td class="px-3.5 py-2 text-center font-bold text-primary">${v.total}</td>
+                  </tr>
+                `
+                  )
+                  .join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    `;
+  };
+
+  const renderAraucania = () => {
+    const ar = data.araucania || PROGRAMAS_TORNEOS_DEFAULT.araucania;
+    return `
+      <section class="space-y-6">
+        <div class="rounded-2xl border bg-card p-6">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-700 dark:text-blue-300">
+              Binacional · Chile & Argentina
+            </span>
+            <span class="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+              ${esc(ar.subtitulo)}
+            </span>
+          </div>
+          <h2 class="mt-3 font-display text-3xl font-extrabold uppercase sm:text-4xl">${esc(ar.nombre)}</h2>
+          <p class="mt-2 text-sm text-muted-foreground leading-relaxed">${esc(ar.descripcion)}</p>
+          <div class="mt-4 rounded-lg bg-amber-500/10 p-3 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300">
+            <strong><i data-lucide="alert-circle" class="size-4 inline mr-1"></i> Particularidades técnicas 2025:</strong>
+            ${esc(ar.particularidad)}
+          </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border bg-card shadow-2xs">
+          <table class="w-full text-left text-sm">
+            <thead class="border-b bg-muted/50 text-xs font-bold uppercase text-muted-foreground">
+              <tr>
+                <th class="px-4 py-3">Tipo</th>
+                <th class="px-4 py-3">Prueba</th>
+                <th class="px-4 py-3 text-center">Femenino</th>
+                <th class="px-4 py-3 text-center">Masculino</th>
+                <th class="px-4 py-3">Implementos / Notas</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y">
+              ${(ar.pruebas || [])
+                .map(
+                  (p) => `
+                <tr class="hover:bg-muted/30 transition-colors">
+                  <td class="px-4 py-3">
+                    <span class="inline-block rounded px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-wider ${
+                      p.tipo === 'Pista'
+                        ? 'bg-primary/10 text-primary'
+                        : p.tipo === 'Campo'
+                        ? 'bg-amber-500/10 text-amber-800 dark:text-amber-300'
+                        : 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-300'
+                    }">
+                      ${esc(p.tipo)}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 font-semibold text-foreground">${esc(p.prueba)}</td>
+                  <td class="px-4 py-3 text-center">${renderBadgeCheck(p.fem)}</td>
+                  <td class="px-4 py-3 text-center">${renderBadgeCheck(p.masc)}</td>
+                  <td class="px-4 py-3 text-xs text-muted-foreground">${esc(p.nota)}</td>
+                </tr>
+              `
+                )
+                .join('')}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    `;
+  };
+
+  return `
+    <div class="min-h-screen flex flex-col">
+      ${renderPublicHeader('/atletismo')}
+      <main class="mx-auto w-full max-w-content flex-1 px-4 py-10 sm:px-6 space-y-8">
+        
+        ${
+          isCoachOrAdmin
+            ? `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-primary/40 bg-primary/10 p-3.5 shadow-2xs">
+            <div class="flex items-center gap-2.5 text-xs">
+              <i data-lucide="shield-check" class="size-5 text-primary shrink-0"></i>
+              <span>
+                <strong class="text-primary font-bold">Sesión autorizada (${session.subRole === 'admin' ? 'Administrador' : 'Entrenador'}):</strong>
+                Podés modificar los programas de pruebas, textos pedagógicos y pesos desde el panel de gestión.
+              </span>
+            </div>
+            <a href="#/entrenador/atletismo" class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground shadow-xs hover:opacity-95 whitespace-nowrap">
+              <i data-lucide="edit-3" class="size-3.5"></i> Panel de Edición
+            </a>
+          </div>
+        `
+            : ''
+        }
+
+        <!-- Hero Encabezado -->
+        <div class="border-b pb-6">
+          <p class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
+            <span class="size-2 rounded-full bg-primary animate-pulse"></span>
+            Guía Formativa y Reglamentaria Oficial
+          </p>
+          <h1 class="mt-2 font-display text-4xl font-extrabold uppercase sm:text-5xl">
+            Atletismo: Disciplinas y Grandes Torneos
+          </h1>
+          <p class="mt-3 max-w-3xl text-muted-foreground text-sm sm:text-base leading-relaxed">
+            Conocé qué es el atletismo según las normas de <strong>World Athletics</strong>, las características de las pruebas de Pista y Campo, y el programa oficial de pruebas de los tres torneos más importantes de nuestra región y el país: <strong>Juegos EPADE</strong>, <strong>Juegos Nacionales Evita</strong> y <strong>Juegos Binacionales de la Araucanía</strong>.
+          </p>
+        </div>
+
+        <!-- Pestañas de Navegación -->
+        <div class="flex flex-wrap gap-2 border-b pb-4">
+          ${tabs
+            .map(
+              (t) => `
+            <button
+              type="button"
+              onclick="setAtletismoTab('${t.id}')"
+              class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs sm:text-sm font-bold transition-all ${
+                currentTab === t.id
+                  ? 'bg-primary text-primary-foreground shadow-xs'
+                  : 'bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground'
+              }"
+            >
+              <i data-lucide="${t.icon}" class="size-4"></i>
+              ${t.label}
+            </button>
+          `
+            )
+            .join('')}
+        </div>
+
+        <!-- Contenido segun pestana seleccionada -->
+        ${
+          currentTab === 'general'
+            ? renderWorldAthletics()
+            : currentTab === 'epade'
+            ? renderEpade()
+            : currentTab === 'evita'
+            ? renderEvita()
+            : currentTab === 'araucania'
+            ? renderAraucania()
+            : `
+              <div class="space-y-16">
+                ${renderWorldAthletics()}
+                <hr class="border-border/60" />
+                ${renderEpade()}
+                <hr class="border-border/60" />
+                ${renderEvita()}
+                <hr class="border-border/60" />
+                ${renderAraucania()}
+              </div>
+            `
+        }
+      </main>
+      ${renderPublicFooter()}
+    </div>
+  `;
+}
+
+/* ==========================================================================
+   PANEL DE EDICIÓN DE ATLETISMO Y TORNEOS (ENTRENADOR Y ADMIN)
+   ========================================================================== */
+function viewCoachAtletismoEditor() {
+  const currentTab = State.editorAtletismoTab || 'epade';
+  const data = getProgramasTorneos();
+  const session = typeof Auth.verifyCurrentSession === 'function' ? Auth.verifyCurrentSession() : Auth.getSession();
+  const isAdmin = Boolean(session && session.subRole === 'admin');
+
+  const editorTabs = [
+    { id: 'epade', label: 'Juegos EPADE (Sub-17)', icon: 'mountain' },
+    { id: 'evita', label: 'Juegos Evita (Sub-14 / Sub-17)', icon: 'trophy' },
+    { id: 'araucania', label: 'Juegos Araucanía', icon: 'globe' },
+    { id: 'general', label: 'World Athletics (Textos)', icon: 'award' },
+  ];
+
+  const contentHtml = `
+    <div class="space-y-6">
+      <!-- Encabezado del Panel -->
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b pb-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
+              ${isAdmin ? 'Administrador General' : 'Panel del Entrenador'}
+            </span>
+            <span class="text-xs text-muted-foreground">Sincronización en Nube Activa</span>
+          </div>
+          <h1 class="mt-1 font-display text-3xl font-extrabold uppercase">Editor de Atletismo y Torneos</h1>
+          <p class="text-xs text-muted-foreground max-w-2xl mt-0.5">
+            Modificá el listado oficial de pruebas, especificaciones técnicas y textos formativos. Los cambios se guardan en la nube y se visualizan inmediatamente en la sección pública.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <a
+            href="#/atletismo"
+            target="_blank"
+            class="inline-flex items-center gap-1.5 rounded-lg border bg-card px-3 py-2 text-xs font-semibold hover:bg-muted"
+          >
+            <i data-lucide="external-link" class="size-3.5"></i> Ver sección pública
+          </a>
+          <button
+            type="button"
+            onclick="restablecerProgramasTorneosOficiales()"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/20"
+          >
+            <i data-lucide="rotate-ccw" class="size-3.5"></i> Restablecer valores de fábrica
+          </button>
+        </div>
+      </div>
+
+      <!-- Pestañas del Editor -->
+      <div class="flex flex-wrap gap-2 border-b pb-3">
+        ${editorTabs
+          .map(
+            (t) => `
+          <button
+            type="button"
+            onclick="setEditorAtletismoTab('${t.id}')"
+            class="inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs sm:text-sm font-bold transition-all ${
+              currentTab === t.id
+                ? 'bg-primary text-primary-foreground shadow-xs'
+                : 'bg-card border text-muted-foreground hover:bg-muted hover:text-foreground'
+            }"
+          >
+            <i data-lucide="${t.icon}" class="size-4"></i>
+            ${t.label}
+          </button>
+        `
+          )
+          .join('')}
+      </div>
+
+      <!-- Contenido según la pestaña seleccionada -->
+      ${
+        currentTab === 'general'
+          ? renderEditorWorldAthletics(data.worldAthletics || PROGRAMAS_TORNEOS_DEFAULT.worldAthletics)
+          : currentTab === 'epade'
+          ? renderEditorEpade(data.epade || PROGRAMAS_TORNEOS_DEFAULT.epade)
+          : currentTab === 'evita'
+          ? renderEditorEvita(data)
+          : renderEditorAraucania(data.araucania || PROGRAMAS_TORNEOS_DEFAULT.araucania)
+      }
+    </div>
+  `;
+
+  return renderCoachShell('atletismo', contentHtml);
+}
+
+function renderEditorEpade(ep) {
+  const pruebas = ep.pruebas || [];
+  return `
+    <div class="space-y-6">
+      <div class="rounded-xl border bg-card p-5">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <h3 class="font-display text-xl font-bold uppercase">${esc(ep.nombre)}</h3>
+            <p class="text-xs text-muted-foreground mt-0.5">${esc(ep.edicion)} · ${esc(ep.sede)}</p>
+            <p class="text-xs text-muted-foreground mt-2 max-w-3xl">${esc(ep.descripcion)}</p>
+          </div>
+          <button
+            type="button"
+            onclick="openEditarInfoTorneoModal('epade')"
+            class="inline-flex items-center gap-1.5 rounded-lg border bg-card px-3 py-1.5 text-xs font-semibold hover:bg-muted whitespace-nowrap"
+          >
+            <i data-lucide="edit" class="size-3.5 text-primary"></i> Editar datos del torneo
+          </button>
+        </div>
+      </div>
+
+      <div class="rounded-xl border bg-card p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h4 class="font-display text-lg font-bold uppercase">Nómina de Pruebas EPADE (${pruebas.length})</h4>
+            <p class="text-xs text-muted-foreground">Podés agregar, editar nombres, habilitaciones por rama y especificaciones.</p>
+          </div>
+          <button
+            type="button"
+            onclick="openAgregarPruebaTorneoModal('epade')"
+            class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:opacity-95 self-start"
+          >
+            <i data-lucide="plus" class="size-4"></i> Agregar prueba a EPADE
+          </button>
+        </div>
+
+        <div class="overflow-x-auto rounded-lg border">
+          <table class="w-full text-left text-xs">
+            <thead class="border-b bg-muted/60 text-muted-foreground font-semibold">
+              <tr>
+                <th class="px-3.5 py-2.5">#</th>
+                <th class="px-3.5 py-2.5">Tipo</th>
+                <th class="px-3.5 py-2.5">Prueba</th>
+                <th class="px-3.5 py-2.5 text-center">Femenino</th>
+                <th class="px-3.5 py-2.5 text-center">Masculino</th>
+                <th class="px-3.5 py-2.5">Especificación</th>
+                <th class="px-3.5 py-2.5 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y">
+              ${pruebas
+                .map(
+                  (p, i) => `
+                <tr class="hover:bg-muted/20">
+                  <td class="px-3.5 py-2 text-muted-foreground font-mono">${i + 1}</td>
+                  <td class="px-3.5 py-2">
+                    <span class="rounded px-2 py-0.5 text-[0.625rem] font-bold uppercase ${
+                      p.tipo === 'Pista' ? 'bg-primary/10 text-primary' : p.tipo === 'Campo' ? 'bg-amber-500/10 text-amber-800' : 'bg-purple-500/10 text-purple-700'
+                    }">${esc(p.tipo)}</span>
+                  </td>
+                  <td class="px-3.5 py-2 font-bold text-foreground">${esc(p.prueba)}</td>
+                  <td class="px-3.5 py-2 text-center">${renderBadgeCheck(p.fem)}</td>
+                  <td class="px-3.5 py-2 text-center">${renderBadgeCheck(p.masc)}</td>
+                  <td class="px-3.5 py-2 text-muted-foreground">${esc(p.nota)}</td>
+                  <td class="px-3.5 py-2 text-right">
+                    <div class="inline-flex items-center gap-1">
+                      <button
+                        type="button"
+                        onclick="openEditarPruebaTorneoModal('epade', ${i})"
+                        title="Editar prueba"
+                        class="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        <i data-lucide="edit-2" class="size-3.5"></i>
+                      </button>
+                      <button
+                        type="button"
+                        onclick="eliminarPruebaTorneo('epade', ${i})"
+                        title="Eliminar prueba"
+                        class="rounded p-1 text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <i data-lucide="trash-2" class="size-3.5"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              `
+                )
+                .join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderEditorEvita(data) {
+  const cat = State.editorEvitaCat || 'sub14';
+  const isVallas = cat === 'vallas';
+  const isSub17 = cat === 'sub17';
+  const evKey = isSub17 ? 'evitaSub17' : 'evitaSub14';
+  const ev = isVallas ? null : (data[evKey] || PROGRAMAS_TORNEOS_DEFAULT[evKey]);
+  const vallas = data.evitaVallas || PROGRAMAS_TORNEOS_DEFAULT.evitaVallas;
+  const pruebas = ev ? (ev.pruebas || []) : [];
+
+  return `
+    <div class="space-y-6">
+      <div class="rounded-xl border bg-card p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span class="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">Juegos Nacionales Evita</span>
+            <h3 class="font-display text-xl font-bold uppercase mt-1">Gestión de Categorías y Vallas Técnicas</h3>
+            <p class="text-xs text-muted-foreground mt-0.5">Editá las pruebas para Sub-14, Sub-17 y las alturas y distancias de vallas.</p>
+          </div>
+          <div class="flex rounded-lg bg-muted p-1 border">
+            <button
+              type="button"
+              onclick="setEditorEvitaCat('sub14')"
+              class="rounded-md px-3 py-1.5 text-xs font-bold transition-all ${
+                cat === 'sub14' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+              }"
+            >
+              Sub-14
+            </button>
+            <button
+              type="button"
+              onclick="setEditorEvitaCat('sub17')"
+              class="rounded-md px-3 py-1.5 text-xs font-bold transition-all ${
+                cat === 'sub17' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+              }"
+            >
+              Sub-17
+            </button>
+            <button
+              type="button"
+              onclick="setEditorEvitaCat('vallas')"
+              class="rounded-md px-3 py-1.5 text-xs font-bold transition-all ${
+                cat === 'vallas' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+              }"
+            >
+              Vallas Oficiales
+            </button>
+          </div>
+        </div>
+      </div>
+
+      ${
+        !isVallas
+          ? `
+        <div class="rounded-xl border bg-card p-5 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h4 class="font-display text-lg font-bold uppercase">
+                Pruebas Evita · ${isSub17 ? 'Sub-17' : 'Sub-14'} (${pruebas.length})
+              </h4>
+              <p class="text-xs text-muted-foreground">Regla: ${esc(ev.regla)}</p>
+            </div>
+            <button
+              type="button"
+              onclick="openAgregarPruebaTorneoModal('${evKey}')"
+              class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:opacity-95 self-start"
+            >
+              <i data-lucide="plus" class="size-4"></i> Agregar prueba a ${isSub17 ? 'Sub-17' : 'Sub-14'}
+            </button>
+          </div>
+
+          <div class="overflow-x-auto rounded-lg border">
+            <table class="w-full text-left text-xs">
+              <thead class="border-b bg-muted/60 text-muted-foreground font-semibold">
+                <tr>
+                  <th class="px-3.5 py-2.5">#</th>
+                  <th class="px-3.5 py-2.5">Tipo</th>
+                  <th class="px-3.5 py-2.5">Prueba</th>
+                  <th class="px-3.5 py-2.5 text-center">Femenino</th>
+                  <th class="px-3.5 py-2.5 text-center">Masculino</th>
+                  <th class="px-3.5 py-2.5">Implemento / Especificación</th>
+                  <th class="px-3.5 py-2.5 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y">
+                ${pruebas
+                  .map(
+                    (p, i) => `
+                  <tr class="hover:bg-muted/20">
+                    <td class="px-3.5 py-2 text-muted-foreground font-mono">${i + 1}</td>
+                    <td class="px-3.5 py-2">
+                      <span class="rounded px-2 py-0.5 text-[0.625rem] font-bold uppercase ${
+                        p.tipo === 'Pista' ? 'bg-primary/10 text-primary' : p.tipo === 'Campo' ? 'bg-amber-500/10 text-amber-800' : 'bg-purple-500/10 text-purple-700'
+                      }">${esc(p.tipo)}</span>
+                    </td>
+                    <td class="px-3.5 py-2 font-bold text-foreground">${esc(p.prueba)}</td>
+                    <td class="px-3.5 py-2 text-center">${renderBadgeCheck(p.fem)}</td>
+                    <td class="px-3.5 py-2 text-center">${renderBadgeCheck(p.masc)}</td>
+                    <td class="px-3.5 py-2 text-muted-foreground">${esc(p.nota)}</td>
+                    <td class="px-3.5 py-2 text-right">
+                      <div class="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          onclick="openEditarPruebaTorneoModal('${evKey}', ${i})"
+                          title="Editar prueba"
+                          class="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
+                          <i data-lucide="edit-2" class="size-3.5"></i>
+                        </button>
+                        <button
+                          type="button"
+                          onclick="eliminarPruebaTorneo('${evKey}', ${i})"
+                          title="Eliminar prueba"
+                          class="rounded p-1 text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <i data-lucide="trash-2" class="size-3.5"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                `
+                  )
+                  .join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `
+          : `
+        <div class="rounded-xl border bg-card p-5 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h4 class="font-display text-lg font-bold uppercase">
+                Especificaciones Técnicas de Vallas (${vallas.length})
+              </h4>
+              <p class="text-xs text-muted-foreground">Alturas reglamentarias, distancia a la 1ª valla, distancia entre vallas y cantidad de vallas.</p>
+            </div>
+            <button
+              type="button"
+              onclick="openAgregarVallaEvitaModal()"
+              class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:opacity-95 self-start"
+            >
+              <i data-lucide="plus" class="size-4"></i> Agregar especificación de valla
+            </button>
+          </div>
+
+          <div class="overflow-x-auto rounded-lg border">
+            <table class="w-full text-left text-xs">
+              <thead class="border-b bg-muted/60 text-muted-foreground font-semibold">
+                <tr>
+                  <th class="px-3.5 py-2.5">Prueba</th>
+                  <th class="px-3.5 py-2.5">Altura</th>
+                  <th class="px-3.5 py-2.5">Hasta 1ª valla</th>
+                  <th class="px-3.5 py-2.5">Entre vallas</th>
+                  <th class="px-3.5 py-2.5 text-center">Nº de vallas</th>
+                  <th class="px-3.5 py-2.5 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y">
+                ${vallas
+                  .map(
+                    (v, i) => `
+                  <tr class="hover:bg-muted/20">
+                    <td class="px-3.5 py-2 font-bold text-foreground">${esc(v.prueba)}</td>
+                    <td class="px-3.5 py-2 font-mono">${esc(v.altura)}</td>
+                    <td class="px-3.5 py-2 font-mono">${esc(v.al1)}</td>
+                    <td class="px-3.5 py-2 font-mono">${esc(v.entre)}</td>
+                    <td class="px-3.5 py-2 text-center font-bold text-primary">${v.total}</td>
+                    <td class="px-3.5 py-2 text-right">
+                      <div class="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          onclick="openEditarVallaEvitaModal(${i})"
+                          title="Editar valla"
+                          class="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
+                          <i data-lucide="edit-2" class="size-3.5"></i>
+                        </button>
+                        <button
+                          type="button"
+                          onclick="eliminarVallaEvita(${i})"
+                          title="Eliminar valla"
+                          class="rounded p-1 text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <i data-lucide="trash-2" class="size-3.5"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                `
+                  )
+                  .join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `
+      }
+    </div>
+  `;
+}
+
+function renderEditorAraucania(ar) {
+  const pruebas = ar.pruebas || [];
+  return `
+    <div class="space-y-6">
+      <div class="rounded-xl border bg-card p-5">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <h3 class="font-display text-xl font-bold uppercase">${esc(ar.nombre)}</h3>
+            <p class="text-xs text-muted-foreground mt-0.5">${esc(ar.subtitulo)}</p>
+            <p class="text-xs text-muted-foreground mt-2 max-w-3xl">${esc(ar.descripcion)}</p>
+            <p class="text-xs text-amber-800 dark:text-amber-300 mt-2 bg-amber-500/10 p-2 rounded border border-amber-500/20 max-w-3xl">
+              <strong>Nota técnica:</strong> ${esc(ar.particularidad)}
+            </p>
+          </div>
+          <button
+            type="button"
+            onclick="openEditarInfoTorneoModal('araucania')"
+            class="inline-flex items-center gap-1.5 rounded-lg border bg-card px-3 py-1.5 text-xs font-semibold hover:bg-muted whitespace-nowrap self-start"
+          >
+            <i data-lucide="edit" class="size-3.5 text-primary"></i> Editar datos del torneo
+          </button>
+        </div>
+      </div>
+
+      <div class="rounded-xl border bg-card p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h4 class="font-display text-lg font-bold uppercase">Nómina de Pruebas Araucanía (${pruebas.length})</h4>
+            <p class="text-xs text-muted-foreground">Incluye las pruebas de pista, ruta pedestre y campo con implementos Sub-20.</p>
+          </div>
+          <button
+            type="button"
+            onclick="openAgregarPruebaTorneoModal('araucania')"
+            class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:opacity-95 self-start"
+          >
+            <i data-lucide="plus" class="size-4"></i> Agregar prueba a Araucanía
+          </button>
+        </div>
+
+        <div class="overflow-x-auto rounded-lg border">
+          <table class="w-full text-left text-xs">
+            <thead class="border-b bg-muted/60 text-muted-foreground font-semibold">
+              <tr>
+                <th class="px-3.5 py-2.5">#</th>
+                <th class="px-3.5 py-2.5">Tipo</th>
+                <th class="px-3.5 py-2.5">Prueba</th>
+                <th class="px-3.5 py-2.5 text-center">Femenino</th>
+                <th class="px-3.5 py-2.5 text-center">Masculino</th>
+                <th class="px-3.5 py-2.5">Implemento / Nota</th>
+                <th class="px-3.5 py-2.5 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y">
+              ${pruebas
+                .map(
+                  (p, i) => `
+                <tr class="hover:bg-muted/20">
+                  <td class="px-3.5 py-2 text-muted-foreground font-mono">${i + 1}</td>
+                  <td class="px-3.5 py-2">
+                    <span class="rounded px-2 py-0.5 text-[0.625rem] font-bold uppercase ${
+                      p.tipo === 'Pista' ? 'bg-primary/10 text-primary' : p.tipo === 'Campo' ? 'bg-amber-500/10 text-amber-800' : 'bg-emerald-500/10 text-emerald-800'
+                    }">${esc(p.tipo)}</span>
+                  </td>
+                  <td class="px-3.5 py-2 font-bold text-foreground">${esc(p.prueba)}</td>
+                  <td class="px-3.5 py-2 text-center">${renderBadgeCheck(p.fem)}</td>
+                  <td class="px-3.5 py-2 text-center">${renderBadgeCheck(p.masc)}</td>
+                  <td class="px-3.5 py-2 text-muted-foreground">${esc(p.nota)}</td>
+                  <td class="px-3.5 py-2 text-right">
+                    <div class="inline-flex items-center gap-1">
+                      <button
+                        type="button"
+                        onclick="openEditarPruebaTorneoModal('araucania', ${i})"
+                        title="Editar prueba"
+                        class="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        <i data-lucide="edit-2" class="size-3.5"></i>
+                      </button>
+                      <button
+                        type="button"
+                        onclick="eliminarPruebaTorneo('araucania', ${i})"
+                        title="Eliminar prueba"
+                        class="rounded p-1 text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <i data-lucide="trash-2" class="size-3.5"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              `
+                )
+                .join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderEditorWorldAthletics(wa) {
+  return `
+    <form onsubmit="saveWorldAthleticsEditor(event)" class="rounded-xl border bg-card p-6 space-y-6">
+      <div class="flex items-center justify-between border-b pb-4">
+        <div>
+          <h3 class="font-display text-xl font-bold uppercase">Textos Pedagógicos Oficiales · World Athletics</h3>
+          <p class="text-xs text-muted-foreground">Podés ajustar las definiciones y descripciones de las pruebas de Pista, Campo y Combinadas.</p>
+        </div>
+        <button
+          type="submit"
+          class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:opacity-95"
+        >
+          <i data-lucide="save" class="size-4"></i> Guardar textos
+        </button>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
+          Definición Principal: ¿Qué es el Atletismo?
+        </label>
+        <textarea
+          id="wa-concepto"
+          rows="3"
+          class="w-full rounded-lg border bg-background p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+        >${esc(wa.concepto || '')}</textarea>
+      </div>
+
+      <div class="pt-4 border-t space-y-4">
+        <h4 class="font-display text-base font-bold uppercase text-primary">Pruebas de Pista</h4>
+        <div class="grid gap-4 md:grid-cols-3">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-foreground">Velocidad y Relevos</label>
+            <textarea
+              id="wa-pista-vel"
+              rows="4"
+              class="w-full rounded-lg border bg-background p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+            >${esc(wa.pistaVelocidadTexto || '')}</textarea>
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-foreground">Medio Fondo y Obstáculos</label>
+            <textarea
+              id="wa-pista-medio"
+              rows="4"
+              class="w-full rounded-lg border bg-background p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+            >${esc(wa.pistaMediofondoTexto || '')}</textarea>
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-foreground">Fondo y Marcha</label>
+            <textarea
+              id="wa-pista-fondo"
+              rows="4"
+              class="w-full rounded-lg border bg-background p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+            >${esc(wa.pistaFondoTexto || '')}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t space-y-4">
+        <h4 class="font-display text-base font-bold uppercase text-amber-600 dark:text-amber-400">Pruebas de Campo</h4>
+        <div class="grid gap-4 md:grid-cols-2">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-foreground">Saltos (Largo, Triple, Alto, Garrocha)</label>
+            <textarea
+              id="wa-campo-saltos"
+              rows="4"
+              class="w-full rounded-lg border bg-background p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+            >${esc(wa.campoSaltosTexto || '')}</textarea>
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-foreground">Lanzamientos (Bala, Disco, Jabalina, Martillo)</label>
+            <textarea
+              id="wa-campo-lanza"
+              rows="4"
+              class="w-full rounded-lg border bg-background p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+            >${esc(wa.campoLanzamientosTexto || '')}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t space-y-1">
+        <label class="text-xs font-bold text-foreground">Pruebas Combinadas</label>
+        <textarea
+          id="wa-campo-comb"
+          rows="3"
+          class="w-full rounded-lg border bg-background p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+        >${esc(wa.campoCombinadasTexto || '')}</textarea>
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button
+          type="submit"
+          class="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground shadow-xs hover:opacity-95"
+        >
+          <i data-lucide="save" class="size-4"></i> Guardar todos los textos pedagógicos
+        </button>
+      </div>
+    </form>
+  `;
+}
+
+/* ==========================================================================
+   MODALES Y OPERACIONES DEL EDITOR DE TORNEOS
+   ========================================================================== */
+window.openEditarPruebaTorneoModal = (torneoKey, index) => {
+  const data = getProgramasTorneos();
+  const tor = data[torneoKey];
+  if (!tor || !tor.pruebas || !tor.pruebas[index]) return;
+  const p = tor.pruebas[index];
+
+  showModalHtml(`
+    <div class="flex items-center justify-between border-b pb-3">
+      <div>
+        <span class="rounded-full bg-primary/10 px-2 py-0.5 text-[0.625rem] font-bold text-primary uppercase">${esc(tor.nombre || torneoKey)}</span>
+        <h3 class="font-display text-lg font-bold uppercase mt-1">Editar Prueba Oficial</h3>
+      </div>
+      <button type="button" onclick="closeModal()" class="text-muted-foreground hover:text-foreground">✕</button>
+    </div>
+
+    <form onsubmit="saveEditarPruebaTorneoModal(event, '${torneoKey}', ${index})" class="mt-4 space-y-3.5">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Tipo</label>
+          <select id="ept-tipo" class="h-9 w-full rounded-lg border bg-background px-3 text-xs">
+            <option ${p.tipo === 'Pista' ? 'selected' : ''}>Pista</option>
+            <option ${p.tipo === 'Campo' ? 'selected' : ''}>Campo</option>
+            <option ${p.tipo === 'Ruta' ? 'selected' : ''}>Ruta</option>
+            <option ${p.tipo === 'Combinada' ? 'selected' : ''}>Combinada</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Nombre de la Prueba</label>
+          <input id="ept-prueba" required value="${esc(p.prueba)}" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Rama Femenina</label>
+          <input id="ept-fem" value="${esc(p.fem)}" placeholder="Sí, —, Sin confirmar, peso o distancia" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Rama Masculina</label>
+          <input id="ept-masc" value="${esc(p.masc)}" placeholder="Sí, —, Sin confirmar, peso o distancia" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Especificación / Implemento / Notas</label>
+        <input id="ept-nota" value="${esc(p.nota || '')}" placeholder="Ej.: 4 kg, o 10 vallas 0,84m" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t">
+        <button type="button" onclick="closeModal()" class="rounded-lg border px-4 py-2 text-xs font-medium hover:bg-muted">Cancelar</button>
+        <button type="submit" class="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:opacity-95">Guardar cambios</button>
+      </div>
+    </form>
+  `);
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.saveEditarPruebaTorneoModal = (e, torneoKey, index) => {
+  e.preventDefault();
+  const data = getProgramasTorneos();
+  if (!data[torneoKey] || !data[torneoKey].pruebas || !data[torneoKey].pruebas[index]) return;
+
+  data[torneoKey].pruebas[index] = {
+    tipo: document.getElementById('ept-tipo').value.trim(),
+    prueba: document.getElementById('ept-prueba').value.trim(),
+    fem: document.getElementById('ept-fem').value.trim() || '—',
+    masc: document.getElementById('ept-masc').value.trim() || '—',
+    nota: document.getElementById('ept-nota').value.trim() || '—',
+  };
+
+  window.DB.programasTorneos = data;
+  saveDB({ type: 'config' });
+  closeModal();
+  showToast('Prueba actualizada correctamente en la nube y en local', 'success');
+  renderApp();
+};
+
+window.openAgregarPruebaTorneoModal = (torneoKey) => {
+  const data = getProgramasTorneos();
+  const tor = data[torneoKey];
+
+  showModalHtml(`
+    <div class="flex items-center justify-between border-b pb-3">
+      <div>
+        <span class="rounded-full bg-primary/10 px-2 py-0.5 text-[0.625rem] font-bold text-primary uppercase">${esc(tor?.nombre || torneoKey)}</span>
+        <h3 class="font-display text-lg font-bold uppercase mt-1">Agregar Nueva Prueba Oficial</h3>
+      </div>
+      <button type="button" onclick="closeModal()" class="text-muted-foreground hover:text-foreground">✕</button>
+    </div>
+
+    <form onsubmit="saveAgregarPruebaTorneoModal(event, '${torneoKey}')" class="mt-4 space-y-3.5">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Tipo</label>
+          <select id="apt-tipo" class="h-9 w-full rounded-lg border bg-background px-3 text-xs">
+            <option>Pista</option>
+            <option>Campo</option>
+            <option>Ruta</option>
+            <option>Combinada</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Nombre de la Prueba</label>
+          <input id="apt-prueba" required placeholder="Ej.: 1500 m llanos" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Rama Femenina</label>
+          <input id="apt-fem" value="Sí" placeholder="Sí, —, Sin confirmar" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Rama Masculina</label>
+          <input id="apt-masc" value="Sí" placeholder="Sí, —, Sin confirmar" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Especificación / Implemento / Notas</label>
+        <input id="apt-nota" placeholder="Ej.: Peso 4 kg, o 10 vallas" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t">
+        <button type="button" onclick="closeModal()" class="rounded-lg border px-4 py-2 text-xs font-medium hover:bg-muted">Cancelar</button>
+        <button type="submit" class="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:opacity-95">Agregar prueba</button>
+      </div>
+    </form>
+  `);
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.saveAgregarPruebaTorneoModal = (e, torneoKey) => {
+  e.preventDefault();
+  const data = getProgramasTorneos();
+  if (!data[torneoKey]) return;
+  if (!Array.isArray(data[torneoKey].pruebas)) data[torneoKey].pruebas = [];
+
+  data[torneoKey].pruebas.push({
+    tipo: document.getElementById('apt-tipo').value.trim(),
+    prueba: document.getElementById('apt-prueba').value.trim(),
+    fem: document.getElementById('apt-fem').value.trim() || '—',
+    masc: document.getElementById('apt-masc').value.trim() || '—',
+    nota: document.getElementById('apt-nota').value.trim() || '—',
+  });
+
+  window.DB.programasTorneos = data;
+  saveDB({ type: 'config' });
+  closeModal();
+  showToast('Nueva prueba agregada exitosamente', 'success');
+  renderApp();
+};
+
+window.eliminarPruebaTorneo = (torneoKey, index) => {
+  const data = getProgramasTorneos();
+  if (!data[torneoKey] || !data[torneoKey].pruebas || !data[torneoKey].pruebas[index]) return;
+  const p = data[torneoKey].pruebas[index];
+
+  if (!confirm(`¿Estás seguro de que deseás eliminar la prueba "${p.prueba}" del torneo?`)) return;
+
+  data[torneoKey].pruebas.splice(index, 1);
+  window.DB.programasTorneos = data;
+  saveDB({ type: 'config' });
+  showToast(`Prueba "${p.prueba}" eliminada del programa`, 'info');
+  renderApp();
+};
+
+window.openEditarInfoTorneoModal = (torneoKey) => {
+  const data = getProgramasTorneos();
+  const tor = data[torneoKey];
+  if (!tor) return;
+
+  showModalHtml(`
+    <div class="flex items-center justify-between border-b pb-3">
+      <div>
+        <h3 class="font-display text-lg font-bold uppercase">Editar Datos del Torneo</h3>
+        <p class="text-xs text-muted-foreground">${esc(tor.nombre)}</p>
+      </div>
+      <button type="button" onclick="closeModal()" class="text-muted-foreground hover:text-foreground">✕</button>
+    </div>
+
+    <form onsubmit="saveEditarInfoTorneoModal(event, '${torneoKey}')" class="mt-4 space-y-3.5">
+      <div>
+        <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Nombre Oficial</label>
+        <input id="eit-nombre" required value="${esc(tor.nombre)}" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Edición / Año</label>
+          <input id="eit-edicion" value="${esc(tor.edicion || tor.subtitulo || '')}" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Sede / Lugar</label>
+          <input id="eit-sede" value="${esc(tor.sede || '')}" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Descripción Informativa</label>
+        <textarea id="eit-desc" rows="3" class="w-full rounded-lg border bg-background p-2.5 text-xs">${esc(tor.descripcion || '')}</textarea>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Nota Técnica / Particularidad</label>
+        <textarea id="eit-nota" rows="2" class="w-full rounded-lg border bg-background p-2.5 text-xs">${esc(tor.notaReglamento || tor.particularidad || '')}</textarea>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t">
+        <button type="button" onclick="closeModal()" class="rounded-lg border px-4 py-2 text-xs font-medium hover:bg-muted">Cancelar</button>
+        <button type="submit" class="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:opacity-95">Guardar información</button>
+      </div>
+    </form>
+  `);
+};
+
+window.saveEditarInfoTorneoModal = (e, torneoKey) => {
+  e.preventDefault();
+  const data = getProgramasTorneos();
+  if (!data[torneoKey]) return;
+
+  data[torneoKey].nombre = document.getElementById('eit-nombre').value.trim();
+  data[torneoKey].edicion = document.getElementById('eit-edicion').value.trim();
+  data[torneoKey].subtitulo = document.getElementById('eit-edicion').value.trim();
+  data[torneoKey].sede = document.getElementById('eit-sede').value.trim();
+  data[torneoKey].descripcion = document.getElementById('eit-desc').value.trim();
+  if (data[torneoKey].notaReglamento !== undefined) {
+    data[torneoKey].notaReglamento = document.getElementById('eit-nota').value.trim();
+  }
+  if (data[torneoKey].particularidad !== undefined) {
+    data[torneoKey].particularidad = document.getElementById('eit-nota').value.trim();
+  }
+
+  window.DB.programasTorneos = data;
+  saveDB({ type: 'config' });
+  closeModal();
+  showToast('Información del torneo actualizada', 'success');
+  renderApp();
+};
+
+window.openEditarVallaEvitaModal = (index) => {
+  const data = getProgramasTorneos();
+  const v = data.evitaVallas ? data.evitaVallas[index] : null;
+  if (!v) return;
+
+  showModalHtml(`
+    <div class="flex items-center justify-between border-b pb-3">
+      <div>
+        <h3 class="font-display text-lg font-bold uppercase">Editar Especificación de Valla</h3>
+        <p class="text-xs text-muted-foreground">${esc(v.prueba)}</p>
+      </div>
+      <button type="button" onclick="closeModal()" class="text-muted-foreground hover:text-foreground">✕</button>
+    </div>
+
+    <form onsubmit="saveEditarVallaEvitaModal(event, ${index})" class="mt-4 space-y-3.5">
+      <div>
+        <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Prueba</label>
+        <input id="ev-prueba" required value="${esc(v.prueba)}" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Altura de Valla (m)</label>
+          <input id="ev-altura" required value="${esc(v.altura)}" placeholder="Ej: 0,76 m" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Cantidad de Vallas</label>
+          <input id="ev-total" type="number" required value="${v.total}" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Hasta 1ª valla (m)</label>
+          <input id="ev-al1" required value="${esc(v.al1)}" placeholder="Ej: 12,50 m" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Entre vallas (m)</label>
+          <input id="ev-entre" required value="${esc(v.entre)}" placeholder="Ej: 8,00 m" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t">
+        <button type="button" onclick="closeModal()" class="rounded-lg border px-4 py-2 text-xs font-medium hover:bg-muted">Cancelar</button>
+        <button type="submit" class="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:opacity-95">Guardar cambios</button>
+      </div>
+    </form>
+  `);
+};
+
+window.saveEditarVallaEvitaModal = (e, index) => {
+  e.preventDefault();
+  const data = getProgramasTorneos();
+  if (!data.evitaVallas || !data.evitaVallas[index]) return;
+
+  data.evitaVallas[index] = {
+    prueba: document.getElementById('ev-prueba').value.trim(),
+    altura: document.getElementById('ev-altura').value.trim(),
+    total: parseInt(document.getElementById('ev-total').value, 10) || 8,
+    al1: document.getElementById('ev-al1').value.trim(),
+    entre: document.getElementById('ev-entre').value.trim(),
+  };
+
+  window.DB.programasTorneos = data;
+  saveDB({ type: 'config' });
+  closeModal();
+  showToast('Especificación de valla guardada exitosamente', 'success');
+  renderApp();
+};
+
+window.openAgregarVallaEvitaModal = () => {
+  showModalHtml(`
+    <div class="flex items-center justify-between border-b pb-3">
+      <div>
+        <h3 class="font-display text-lg font-bold uppercase">Agregar Especificación de Valla</h3>
+      </div>
+      <button type="button" onclick="closeModal()" class="text-muted-foreground hover:text-foreground">✕</button>
+    </div>
+
+    <form onsubmit="saveAgregarVallaEvitaModal(event)" class="mt-4 space-y-3.5">
+      <div>
+        <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Prueba</label>
+        <input id="av-prueba" required placeholder="Ej.: 400 m c/vallas" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Altura de Valla (m)</label>
+          <input id="av-altura" required placeholder="Ej: 0,84 m" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Cantidad de Vallas</label>
+          <input id="av-total" type="number" required value="10" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Hasta 1ª valla (m)</label>
+          <input id="av-al1" required placeholder="Ej: 45,00 m" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-muted-foreground mb-1">Entre vallas (m)</label>
+          <input id="av-entre" required placeholder="Ej: 35,00 m" class="h-9 w-full rounded-lg border bg-background px-3 text-xs" />
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t">
+        <button type="button" onclick="closeModal()" class="rounded-lg border px-4 py-2 text-xs font-medium hover:bg-muted">Cancelar</button>
+        <button type="submit" class="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:opacity-95">Agregar valla</button>
+      </div>
+    </form>
+  `);
+};
+
+window.saveAgregarVallaEvitaModal = (e) => {
+  e.preventDefault();
+  const data = getProgramasTorneos();
+  if (!Array.isArray(data.evitaVallas)) data.evitaVallas = [];
+
+  data.evitaVallas.push({
+    prueba: document.getElementById('av-prueba').value.trim(),
+    altura: document.getElementById('av-altura').value.trim(),
+    total: parseInt(document.getElementById('av-total').value, 10) || 10,
+    al1: document.getElementById('av-al1').value.trim(),
+    entre: document.getElementById('av-entre').value.trim(),
+  });
+
+  window.DB.programasTorneos = data;
+  saveDB({ type: 'config' });
+  closeModal();
+  showToast('Especificación de valla agregada', 'success');
+  renderApp();
+};
+
+window.eliminarVallaEvita = (index) => {
+  const data = getProgramasTorneos();
+  if (!data.evitaVallas || !data.evitaVallas[index]) return;
+  const v = data.evitaVallas[index];
+
+  if (!confirm(`¿Estás seguro de que deseás eliminar la valla "${v.prueba}"?`)) return;
+
+  data.evitaVallas.splice(index, 1);
+  window.DB.programasTorneos = data;
+  saveDB({ type: 'config' });
+  showToast(`Valla "${v.prueba}" eliminada`, 'info');
+  renderApp();
+};
+
+window.saveWorldAthleticsEditor = (e) => {
+  e.preventDefault();
+  const data = getProgramasTorneos();
+  data.worldAthletics = {
+    concepto: document.getElementById('wa-concepto').value.trim(),
+    pistaVelocidadTitulo: 'Velocidad y Relevos',
+    pistaVelocidadTexto: document.getElementById('wa-pista-vel').value.trim(),
+    pistaMediofondoTitulo: 'Medio Fondo y Obstáculos',
+    pistaMediofondoTexto: document.getElementById('wa-pista-medio').value.trim(),
+    pistaFondoTitulo: 'Fondo y Marcha Atlética',
+    pistaFondoTexto: document.getElementById('wa-pista-fondo').value.trim(),
+    campoSaltosTitulo: 'Saltos (Horizontales y Verticales)',
+    campoSaltosTexto: document.getElementById('wa-campo-saltos').value.trim(),
+    campoLanzamientosTitulo: 'Lanzamientos',
+    campoLanzamientosTexto: document.getElementById('wa-campo-lanza').value.trim(),
+    campoCombinadasTitulo: 'Pruebas Combinadas (Pentatlón, Hexátlon, Heptatlón y Decatlón)',
+    campoCombinadasTexto: document.getElementById('wa-campo-comb').value.trim(),
+  };
+
+  window.DB.programasTorneos = data;
+  saveDB({ type: 'config' });
+  showToast('Textos oficiales de World Athletics guardados correctamente', 'success');
+  renderApp();
+};
+
+window.restablecerProgramasTorneosOficiales = () => {
+  if (!confirm('¿Restablecer todos los programas de torneos (EPADE, Evita, Araucanía) y los textos pedagógicos a los valores oficiales de fábrica?')) {
+    return;
+  }
+  window.DB.programasTorneos = JSON.parse(JSON.stringify(PROGRAMAS_TORNEOS_DEFAULT));
+  saveDB({ type: 'config' });
+  showToast('¡Programas y contenidos restablecidos a los valores oficiales!', 'success');
+  renderApp();
+};
+
 function viewIngresar() {
   return `
     <div class="grid min-h-screen lg:grid-cols-2">
@@ -901,6 +2595,7 @@ function renderCoachShell(activeSection, contentHtml) {
     { to: '#/entrenador/competencias', id: 'competencias', label: 'Competencias', icon: 'calendar-days' },
     { to: '#/entrenador/pagos', id: 'pagos', label: 'Pagos', icon: 'wallet' },
     { to: '#/entrenador/avisos', id: 'avisos', label: 'Avisos', icon: 'megaphone' },
+    { to: '#/entrenador/atletismo', id: 'atletismo', label: 'Guía y Torneos', icon: 'book-open' },
   ];
 
   const navHtml = navItems
@@ -7831,6 +9526,9 @@ function renderApp(preserveSearchFocus = false) {
   if (path === '/' || path === '') {
     document.title = 'Willilefche · Escuela Municipal de Valcheta';
     html = viewHome();
+  } else if (path === '/atletismo' || path === '/disciplinas' || path === '/pruebas') {
+    document.title = 'Atletismo: Disciplinas y Grandes Juegos · Willilefche';
+    html = viewAtletismo();
   } else if (path === '/rankings') {
     document.title = 'Rankings y marcas · Willilefche';
     html = viewRankings();
@@ -7860,6 +9558,9 @@ function renderApp(preserveSearchFocus = false) {
   } else if (path === '/entrenador/avisos') {
     document.title = 'Avisos · Willilefche';
     html = viewCoachAvisos();
+  } else if (path === '/entrenador/atletismo' || path === '/entrenador/atletismo/' || path === '/entrenador/guia') {
+    document.title = 'Editor de Atletismo y Torneos Oficiales · Willilefche';
+    html = viewCoachAtletismoEditor();
   } else if (path === '/atleta' || path.startsWith('/atleta/')) {
     const atletaId = path.replace('/atleta', '').replace('/', '') || session?.atletaId || DB.atletas[0]?.id;
     document.title = 'Mi plan · Willilefche';

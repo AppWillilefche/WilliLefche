@@ -2630,10 +2630,6 @@ const CloudSync = {
         window.firebase.initializeApp(cfg);
       }
       this.firestore = window.firebase.firestore();
-      const targetDbId = cfg.databaseId || 'default';
-      if (this.firestore && this.firestore._delegate && this.firestore._delegate._databaseId) {
-        this.firestore._delegate._databaseId.database = targetDbId;
-      }
 
       // Habilitar persistencia offline de Firestore
       this.firestore
@@ -2650,7 +2646,7 @@ const CloudSync = {
             const session =
               window.Auth && typeof window.Auth.getSession === 'function' ? window.Auth.getSession() : null;
             if (session) {
-              this.setStatus('connecting', 'Conectando con Firebase Auth…');
+              this.setStatus('connecting', 'Verificando sesión…');
               if (window.Auth && typeof window.Auth.ensureFirebaseAuth === 'function') {
                 const authedUser = await window.Auth.ensureFirebaseAuth(session);
                 if (authedUser) {
@@ -2663,6 +2659,18 @@ const CloudSync = {
             this.startPublicFirestoreSubscription();
           }
         });
+
+        // Oyentes nativos de conexión del navegador
+        if (!this._netListenersAttached) {
+          this._netListenersAttached = true;
+          window.addEventListener('online', () => {
+            this.setStatus('online', 'En línea');
+            this.dispatchSubscriptionByRole();
+          });
+          window.addEventListener('offline', () => {
+            this.setStatus('error', 'Sin conexión (Caché local)');
+          });
+        }
       } else {
         this.dispatchSubscriptionByRole();
       }
@@ -2714,21 +2722,48 @@ const CloudSync = {
     });
   },
 
+  _renderTimeout: null,
+  requestRender() {
+    if (this._renderTimeout) clearTimeout(this._renderTimeout);
+    this._renderTimeout = setTimeout(() => {
+      if (typeof window.renderApp === 'function') {
+        window.renderApp(true);
+      }
+    }, 60);
+  },
+
   renderBadgeHtml() {
+    const isOnline = navigator.onLine !== false;
+    const effectiveStatus = isOnline ? (this.status || 'local') : 'error';
+    const effectiveText = isOnline ? (this.statusText || 'En línea') : 'Sin conexión (Caché local)';
+
     const map = {
-      online: ['bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30', '●'],
-      connecting: ['bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30', '◌'],
-      error: ['bg-destructive/15 text-destructive border-destructive/30', '▲'],
-      local: ['bg-muted text-muted-foreground border-border', '○'],
+      online: {
+        cls: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+        dot: '<span class="inline-block size-2 rounded-full bg-emerald-500 animate-pulse"></span>',
+      },
+      connecting: {
+        cls: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
+        dot: '<span class="inline-block size-2 rounded-full border-2 border-amber-500 border-t-transparent animate-spin"></span>',
+      },
+      error: {
+        cls: 'border-destructive/30 bg-destructive/10 text-destructive',
+        dot: '<span class="inline-block size-2 rounded-full bg-destructive"></span>',
+      },
+      local: {
+        cls: 'border-border bg-muted/60 text-muted-foreground',
+        dot: '<span class="inline-block size-2 rounded-full bg-muted-foreground/60"></span>',
+      },
     };
-    const [cls, dot] = map[this.status] || map.local;
+
+    const cfg = map[effectiveStatus] || map.local;
     return `
       <span
-        title="Estado de sincronización de la base de datos"
-        class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold select-none ${cls}"
+        title="Estado de sincronización en tiempo real: ${effectiveText}"
+        class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold select-none shadow-2xs ${cfg.cls}"
       >
-        <span>${dot}</span>
-        <span>${this.statusText}</span>
+        ${cfg.dot}
+        <span>${effectiveText}</span>
       </span>
     `;
   },
@@ -2737,7 +2772,7 @@ const CloudSync = {
     if (!this.firestore) return;
     this.stopSubscriptions();
     const db = this.firestore;
-    this.setStatus('connecting', 'Cargando datos públicos...');
+    this.setStatus('connecting', 'Cargando datos públicos…');
 
     // 1. Competencias públicas
     const unsubComp = db.collection('competencias').onSnapshot(
@@ -2745,9 +2780,13 @@ const CloudSync = {
         const comps = [];
         snap.forEach((d) => comps.push(fixMojibakeInObj(d.data())));
         if (comps.length > 0) window.DB.competencias = comps;
-        if (typeof window.renderApp === 'function') window.renderApp(true);
+        this.setStatus('online', 'Modo Público');
+        this.requestRender();
       },
-      () => {}
+      (err) => {
+        console.warn('Aviso competencias públicas:', err);
+        this.setStatus('online', 'Modo Público');
+      }
     );
     this._unsubscribers.push(unsubComp);
 
@@ -2757,12 +2796,31 @@ const CloudSync = {
         const ranking = [];
         snap.forEach((d) => ranking.push(fixMojibakeInObj(d.data())));
         window.DB.ranking_publico = ranking;
-        this.setStatus('online', 'Público');
-        if (typeof window.renderApp === 'function') window.renderApp(true);
+        this.setStatus('online', 'Modo Público');
+        this.requestRender();
+      },
+      (err) => {
+        console.warn('Aviso ranking público:', err);
+        this.setStatus('online', 'Modo Público');
+      }
+    );
+    this._unsubscribers.push(unsubRanking);
+
+    // 3. Configuración pública en tiempo real (programas de torneos, disciplinas y equipo)
+    const unsubCfg = db.collection('config').doc('general').onSnapshot(
+      (snap) => {
+        if (snap.exists) {
+          const cfg = fixMojibakeInObj(snap.data());
+          if (cfg.equipo) window.DB.equipo = { ...window.DB.equipo, ...cfg.equipo };
+          if (cfg.programasTorneos && typeof cfg.programasTorneos === 'object') {
+            window.DB.programasTorneos = cfg.programasTorneos;
+          }
+          this.requestRender();
+        }
       },
       () => {}
     );
-    this._unsubscribers.push(unsubRanking);
+    this._unsubscribers.push(unsubCfg);
   },
 
   /**
@@ -2770,7 +2828,7 @@ const CloudSync = {
    * Cada portal solicita ÚNICAMENTE sus propios datos (fichas, sesiones, pagos y avisos).
    * Ningún dato privado de otros menores viaja al dispositivo ni queda en localStorage.
    */
-    _saveAtletaCache(atletaId) {
+  _saveAtletaCache(atletaId) {
     try {
       const a = (window.DB.atletas || []).find((x) => x.id === atletaId) || (window.DB.atletas || [])[0];
       const cacheAtleta = {
@@ -2815,7 +2873,7 @@ const CloudSync = {
           const existing = (window.DB.atletas || []).find((a) => a.id === atletaId) || {};
           window.DB.atletas = [{ ...existing, ...data }];
           this._saveAtletaCache(atletaId);
-          if (typeof window.renderApp === 'function') window.renderApp(true);
+          this.requestRender();
         }
       },
       (err) => console.warn('Atleta sub error:', err)
@@ -2830,7 +2888,7 @@ const CloudSync = {
           const existing = (window.DB.atletas || []).find((a) => a.id === atletaId) || {};
           window.DB.atletas = [{ ...existing, ...data }];
           this._saveAtletaCache(atletaId);
-          if (typeof window.renderApp === 'function') window.renderApp(true);
+          this.requestRender();
         }
       },
       (err) => console.warn('Salud sub error:', err)
@@ -2846,7 +2904,7 @@ const CloudSync = {
         if (!window.DB.planes) window.DB.planes = {};
         window.DB.planes[atletaId] = ses;
         this._saveAtletaCache(atletaId);
-        if (typeof window.renderApp === 'function') window.renderApp(true);
+        this.requestRender();
       },
       (err) => console.warn('Sesiones sub error:', err)
     );
@@ -2859,7 +2917,7 @@ const CloudSync = {
         snap.forEach((d) => pgs.push(fixMojibakeInObj(d.data())));
         window.DB.pagos = pgs;
         this._saveAtletaCache(atletaId);
-        if (typeof window.renderApp === 'function') window.renderApp(true);
+        this.requestRender();
       },
       (err) => console.warn('Pagos sub error:', err)
     );
@@ -2872,7 +2930,7 @@ const CloudSync = {
         snap.forEach((d) => avs.push(fixMojibakeInObj(d.data())));
         window.DB.avisos = avs;
         this._saveAtletaCache(atletaId);
-        if (typeof window.renderApp === 'function') window.renderApp(true);
+        this.requestRender();
       },
       (err) => console.warn('Avisos sub error:', err)
     );
@@ -2884,7 +2942,7 @@ const CloudSync = {
         const comps = [];
         snap.forEach((d) => comps.push(fixMojibakeInObj(d.data())));
         if (comps.length > 0) window.DB.competencias = comps;
-        if (typeof window.renderApp === 'function') window.renderApp(true);
+        this.requestRender();
       },
       () => {}
     );
@@ -2895,8 +2953,8 @@ const CloudSync = {
         const ranking = [];
         snap.forEach((d) => ranking.push(fixMojibakeInObj(d.data())));
         window.DB.ranking_publico = ranking;
-        this.setStatus('online', 'Sincronizado');
-        if (typeof window.renderApp === 'function') window.renderApp(true);
+        this.setStatus('online', 'En línea');
+        this.requestRender();
       },
       () => {}
     );
@@ -2912,7 +2970,7 @@ const CloudSync = {
     if (!this.firestore) return;
     this.stopSubscriptions();
     const db = this.firestore;
-    this.setStatus('connecting', 'Sincronizando colecciones modulares...');
+    this.setStatus('connecting', 'Sincronizando en vivo…');
 
     // 1. Configuración General (config/general)
     const unsubCfg = db.collection('config').doc('general').onSnapshot(
@@ -2923,7 +2981,9 @@ const CloudSync = {
           if (Array.isArray(cfg.conceptosCobro)) window.DB.conceptosCobro = cfg.conceptosCobro;
           if (Array.isArray(cfg.disciplinas)) window.DB.disciplinas = cfg.disciplinas;
           if (Array.isArray(cfg.distanciasRanking)) window.DB.distanciasRanking = cfg.distanciasRanking;
+          if (cfg.programasTorneos && typeof cfg.programasTorneos === 'object') window.DB.programasTorneos = cfg.programasTorneos;
         }
+        this.setStatus('online', 'Sincronizado');
       },
       (err) => console.warn('Aviso config/general:', err)
     );
@@ -2933,6 +2993,7 @@ const CloudSync = {
     const unsubAtletas = db.collection('atletas').onSnapshot(
       async (snap) => {
         if (this._isSyncing) return;
+        this.setStatus('online', 'Sincronizado');
         if (snap.empty) {
           console.log('Colección atletas vacía en Firestore. Subiendo nómina inicial modular...');
           this.pushToCloud();
@@ -3008,7 +3069,7 @@ const CloudSync = {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
         } catch (e) {}
         this.setStatus('online', 'Sincronizado');
-        if (typeof window.renderApp === 'function') window.renderApp(true);
+        this.requestRender();
       },
       (err) => {
         console.error('Error suscribiendo a colección atletas:', err);
@@ -3041,7 +3102,7 @@ const CloudSync = {
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
         } catch (e) {}
-        if (typeof window.renderApp === 'function') window.renderApp(true);
+        this.requestRender();
       },
       (err) => console.warn('Aviso sesiones:', err)
     );
@@ -3056,7 +3117,7 @@ const CloudSync = {
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
         } catch (e) {}
-        if (typeof window.renderApp === 'function') window.renderApp(true);
+        this.requestRender();
       },
       (err) => console.warn('Aviso pagos:', err)
     );
@@ -3071,7 +3132,7 @@ const CloudSync = {
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
         } catch (e) {}
-        if (typeof window.renderApp === 'function') window.renderApp(true);
+        this.requestRender();
       },
       (err) => console.warn('Aviso competencias:', err)
     );
@@ -3086,7 +3147,7 @@ const CloudSync = {
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
         } catch (e) {}
-        if (typeof window.renderApp === 'function') window.renderApp(true);
+        this.requestRender();
       },
       (err) => console.warn('Aviso resultados:', err)
     );
@@ -3101,7 +3162,7 @@ const CloudSync = {
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
         } catch (e) {}
-        if (typeof window.renderApp === 'function') window.renderApp(true);
+        this.requestRender();
       },
       (err) => console.warn('Aviso avisos:', err)
     );
@@ -3116,7 +3177,7 @@ const CloudSync = {
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
         } catch (e) {}
-        if (typeof window.renderApp === 'function') window.renderApp(true);
+        this.requestRender();
       },
       (err) => console.warn('Aviso ranking_publico:', err)
     );
@@ -3287,6 +3348,7 @@ const CloudSync = {
         conceptosCobro: window.DB.conceptosCobro || [],
         disciplinas: window.DB.disciplinas || [],
         distanciasRanking: window.DB.distanciasRanking || DEFAULT_DISTANCIAS_RANKING,
+        programasTorneos: window.DB.programasTorneos || null,
         updatedAt: Date.now(),
       });
       await Promise.all([
@@ -3642,10 +3704,6 @@ function saveDB(immediateSyncEntity = null) {
       }
     }
 
-    // 3. Programación debounced (1.2s de inactividad) para sincronizar en segundo plano sin ralentizar
-    if (window.CloudSync && typeof window.CloudSync.schedulePush === 'function') {
-      window.CloudSync.schedulePush(1200);
-    }
   } else if (session && session.atletaId) {
     // Para atletas / familias: solo guardar su propia caché individual (sin datos de terceros)
     try {
