@@ -1,5 +1,5 @@
 // Service Worker · Willilefche (Escuela Municipal de Valcheta)
-const CACHE_NAME = 'willilefche-pwa-v1.15.1';
+const CACHE_NAME = 'willilefche-pwa-v1.15.2';
 const CORE_ASSETS = [
   './',
   './index.html',

@@ -139,13 +139,15 @@ function isInitialProvisionAllowed(resolved, rawUser, rawPass) {
     const a = (window.DB?.atletas || []).find((x) => x.id === resolved.atletaId);
     if (!a) return false;
     const aDni = cleanDniStr(a.dni);
-    return (pDni && aDni && pDni === aDni) || (p.length >= 6);
+    // Solo se permite crear la cuenta si la clave inicial coincide exactamente con su DNI oficial sin puntos
+    return Boolean(pDni && aDni && pDni === aDni);
   }
   if (resolved.expectedRole === 'guardian' && resolved.atletaId) {
     const a = (window.DB?.atletas || []).find((x) => x.id === resolved.atletaId);
     if (!a) return false;
     const aDni = cleanDniStr(a.dni);
-    return (pDni && aDni && pDni === aDni) || (p.length >= 6);
+    const tutorDni = a.tutor?.dni ? cleanDniStr(a.tutor.dni) : null;
+    return Boolean((pDni && aDni && pDni === aDni) || (pDni && tutorDni && pDni === tutorDni));
   }
   return false;
 }
@@ -280,7 +282,10 @@ const Auth = {
             authError = createErr;
           }
         } else {
-          authError = signInErr;
+          return {
+            ok: false,
+            error: 'Contraseña incorrecta. Para el primer ingreso debe utilizar su número de DNI oficial sin puntos.',
+          };
         }
       } else {
         authError = signInErr;

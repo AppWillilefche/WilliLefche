@@ -2806,21 +2806,35 @@ const CloudSync = {
     );
     this._unsubscribers.push(unsubRanking);
 
-    // 3. Configuración pública en tiempo real (programas de torneos, disciplinas y equipo)
-    const unsubCfg = db.collection('config').doc('general').onSnapshot(
+    // 8. Guía de Atletismo y Programas Oficiales (guias_publicas/atletismo)
+    const unsubGuiasCoach = db.collection('guias_publicas').doc('atletismo').onSnapshot(
       (snap) => {
         if (snap.exists) {
-          const cfg = fixMojibakeInObj(snap.data());
-          if (cfg.equipo) window.DB.equipo = { ...window.DB.equipo, ...cfg.equipo };
-          if (cfg.programasTorneos && typeof cfg.programasTorneos === 'object') {
-            window.DB.programasTorneos = cfg.programasTorneos;
+          const gData = fixMojibakeInObj(snap.data());
+          if (gData && typeof gData === 'object' && Object.keys(gData).length > 0) {
+            window.DB.programasTorneos = gData;
+            this.requestRender();
           }
-          this.requestRender();
         }
       },
       () => {}
     );
-    this._unsubscribers.push(unsubCfg);
+    this._unsubscribers.push(unsubGuiasCoach);
+
+    // 3. Guía de Atletismo y Programas Oficiales Públicos (Punto B9 del anexo: lectura pública sin autenticación)
+    const unsubGuias = db.collection('guias_publicas').doc('atletismo').onSnapshot(
+      (snap) => {
+        if (snap.exists) {
+          const gData = fixMojibakeInObj(snap.data());
+          if (gData && typeof gData === 'object' && Object.keys(gData).length > 0) {
+            window.DB.programasTorneos = gData;
+            this.requestRender();
+          }
+        }
+      },
+      (err) => console.warn('Aviso guías públicas:', err)
+    );
+    this._unsubscribers.push(unsubGuias);
   },
 
   /**
@@ -3340,6 +3354,17 @@ const CloudSync = {
     }
   },
 
+  async syncProgramasTorneos(programas) {
+    if (!this.firestore) return;
+    try {
+      const data = sanitizeForFirestore(programas || window.DB.programasTorneos || {});
+      data.updatedAt = Date.now();
+      await this.firestore.collection('guias_publicas').doc('atletismo').set(data, { merge: true });
+    } catch (e) {
+      console.warn('Error en syncProgramasTorneos:', e);
+    }
+  },
+
   async syncConfig() {
     if (!this.firestore) return;
     try {
@@ -3699,7 +3724,10 @@ function saveDB(immediateSyncEntity = null) {
         window.CloudSync.syncAviso(immediateSyncEntity.data);
       } else if (immediateSyncEntity.type === 'competencia' && immediateSyncEntity.data) {
         window.CloudSync.syncCompetencia(immediateSyncEntity.data);
-      } else if (immediateSyncEntity.type === 'config') {
+      } else if (immediateSyncEntity.type === 'config' || immediateSyncEntity.type === 'programasTorneos') {
+        if (window.CloudSync.syncProgramasTorneos && window.DB.programasTorneos) {
+          window.CloudSync.syncProgramasTorneos(window.DB.programasTorneos);
+        }
         window.CloudSync.syncConfig();
       }
     }

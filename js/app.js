@@ -2114,7 +2114,7 @@ window.saveEditarPruebaTorneoModal = (e, torneoKey, index) => {
   };
 
   window.DB.programasTorneos = data;
-  saveDB({ type: 'config' });
+  saveDB({ type: 'programasTorneos' });
   closeModal();
   showToast('Prueba actualizada correctamente en la nube y en local', 'success');
   renderApp();
@@ -2190,7 +2190,7 @@ window.saveAgregarPruebaTorneoModal = (e, torneoKey) => {
   });
 
   window.DB.programasTorneos = data;
-  saveDB({ type: 'config' });
+  saveDB({ type: 'programasTorneos' });
   closeModal();
   showToast('Nueva prueba agregada exitosamente', 'success');
   renderApp();
@@ -2205,7 +2205,7 @@ window.eliminarPruebaTorneo = (torneoKey, index) => {
 
   data[torneoKey].pruebas.splice(index, 1);
   window.DB.programasTorneos = data;
-  saveDB({ type: 'config' });
+  saveDB({ type: 'programasTorneos' });
   showToast(`Prueba "${p.prueba}" eliminada del programa`, 'info');
   renderApp();
 };
@@ -2277,7 +2277,7 @@ window.saveEditarInfoTorneoModal = (e, torneoKey) => {
   }
 
   window.DB.programasTorneos = data;
-  saveDB({ type: 'config' });
+  saveDB({ type: 'programasTorneos' });
   closeModal();
   showToast('Información del torneo actualizada', 'success');
   renderApp();
@@ -2347,7 +2347,7 @@ window.saveEditarVallaEvitaModal = (e, index) => {
   };
 
   window.DB.programasTorneos = data;
-  saveDB({ type: 'config' });
+  saveDB({ type: 'programasTorneos' });
   closeModal();
   showToast('Especificación de valla guardada exitosamente', 'success');
   renderApp();
@@ -2412,7 +2412,7 @@ window.saveAgregarVallaEvitaModal = (e) => {
   });
 
   window.DB.programasTorneos = data;
-  saveDB({ type: 'config' });
+  saveDB({ type: 'programasTorneos' });
   closeModal();
   showToast('Especificación de valla agregada', 'success');
   renderApp();
@@ -2427,7 +2427,7 @@ window.eliminarVallaEvita = (index) => {
 
   data.evitaVallas.splice(index, 1);
   window.DB.programasTorneos = data;
-  saveDB({ type: 'config' });
+  saveDB({ type: 'programasTorneos' });
   showToast(`Valla "${v.prueba}" eliminada`, 'info');
   renderApp();
 };
@@ -2452,7 +2452,7 @@ window.saveWorldAthleticsEditor = (e) => {
   };
 
   window.DB.programasTorneos = data;
-  saveDB({ type: 'config' });
+  saveDB({ type: 'programasTorneos' });
   showToast('Textos oficiales de World Athletics guardados correctamente', 'success');
   renderApp();
 };
@@ -2462,7 +2462,7 @@ window.restablecerProgramasTorneosOficiales = () => {
     return;
   }
   window.DB.programasTorneos = JSON.parse(JSON.stringify(PROGRAMAS_TORNEOS_DEFAULT));
-  saveDB({ type: 'config' });
+  saveDB({ type: 'programasTorneos' });
   showToast('¡Programas y contenidos restablecidos a los valores oficiales!', 'success');
   renderApp();
 };
