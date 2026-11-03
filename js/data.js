@@ -5978,7 +5978,7 @@ const CloudSync = {
 
 
     // 6. Avisos dirigidos al atleta o a 'TODOS'
-
+    let initialAvisosAtleta = true;
     const unsubAvisos = db.collection('avisos').onSnapshot(
       (snap) => {
         const avs = [];
@@ -5993,6 +5993,45 @@ const CloudSync = {
         });
         window.DB.avisos = avs;
         this._saveAtletaCache(atletaId);
+
+        // Notificar al atleta en tiempo real si ingresa un aviso nuevo del entrenador
+        if (!initialAvisosAtleta) {
+          snap.docChanges().forEach((change) => {
+            const av = fixMojibakeInObj(change.doc.data());
+            const esParaMi =
+              (Array.isArray(av.destinatarios) && (av.destinatarios.includes(atletaId) || av.destinatarios.includes('TODOS'))) ||
+              av.atletaId === atletaId;
+            if (!esParaMi) return;
+
+            if (change.type === 'added' && av.autor !== 'atleta') {
+              if (window.NotificationSystem && typeof window.NotificationSystem.notificar === 'function') {
+                window.NotificationSystem.notificar({
+                  titulo: `Nuevo aviso: ${av.titulo || 'Comunicado'}`,
+                  cuerpo: av.cuerpo || '',
+                  url: `#/atleta/${atletaId}`,
+                  autor: 'Entrenador'
+                });
+              }
+            } else if (change.type === 'modified') {
+              const resps = Array.isArray(av.respuestas) ? av.respuestas : [];
+              if (resps.length > 0) {
+                const lastResp = resps[resps.length - 1];
+                if (lastResp && lastResp.rol === 'entrenador') {
+                  if (window.NotificationSystem && typeof window.NotificationSystem.notificar === 'function') {
+                    window.NotificationSystem.notificar({
+                      titulo: `Respuesta del Entrenador`,
+                      cuerpo: lastResp.texto || '',
+                      url: `#/atleta/${atletaId}`,
+                      autor: 'Entrenador'
+                    });
+                  }
+                }
+              }
+            }
+          });
+        }
+        initialAvisosAtleta = false;
+
         this.requestRender();
       },
       (err) => console.warn('Avisos sub error:', err)
@@ -6447,6 +6486,7 @@ const CloudSync = {
 
 
     // 7. Colección de Avisos (avisos/{id})
+    let initialAvisosCoach = true;
     const unsubAvisos = db.collection('avisos').onSnapshot(
       (snap) => {
         const avs = [];
@@ -6465,6 +6505,42 @@ const CloudSync = {
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
         } catch (e) {}
+
+        // Notificar al entrenador en tiempo real ante mensajes nuevos de atletas o respuestas
+        if (!initialAvisosCoach) {
+          snap.docChanges().forEach((change) => {
+            const av = fixMojibakeInObj(change.doc.data());
+            if (change.type === 'added') {
+              if (av.autor === 'atleta') {
+                if (window.NotificationSystem && typeof window.NotificationSystem.notificar === 'function') {
+                  window.NotificationSystem.notificar({
+                    titulo: `Mensaje de ${av.destinatariosLabel || 'Atleta'}`,
+                    cuerpo: av.cuerpo || '',
+                    url: '#/entrenador/avisos',
+                    autor: av.destinatariosLabel || 'Atleta'
+                  });
+                }
+              }
+            } else if (change.type === 'modified') {
+              const resps = Array.isArray(av.respuestas) ? av.respuestas : [];
+              if (resps.length > 0) {
+                const lastResp = resps[resps.length - 1];
+                if (lastResp && lastResp.rol === 'atleta') {
+                  if (window.NotificationSystem && typeof window.NotificationSystem.notificar === 'function') {
+                    window.NotificationSystem.notificar({
+                      titulo: `Respuesta de ${lastResp.autor || 'Atleta'}`,
+                      cuerpo: lastResp.texto || '',
+                      url: '#/entrenador/avisos',
+                      autor: lastResp.autor || 'Atleta'
+                    });
+                  }
+                }
+              }
+            }
+          });
+        }
+        initialAvisosCoach = false;
+
         this.requestRender();
       },
       (err) => console.warn('Aviso avisos:', err)
@@ -6762,6 +6838,8 @@ const CloudSync = {
         fecha: aviso.fecha || '',
         leidos: Number(aviso.leidos) || 0,
         total: Number(aviso.total) || 1,
+        leidoPorCoach: Boolean(aviso.leidoPorCoach),
+        leidosAtletas: Array.isArray(aviso.leidosAtletas) ? aviso.leidosAtletas : [],
         respuestas: Array.isArray(aviso.respuestas) ? aviso.respuestas : [],
 
         updatedAt: Date.now(),
@@ -7311,6 +7389,8 @@ const CloudSync = {
           fecha: av.fecha || '',
           leidos: Number(av.leidos) || 0,
           total: Number(av.total) || 1,
+          leidoPorCoach: Boolean(av.leidoPorCoach),
+          leidosAtletas: Array.isArray(av.leidosAtletas) ? av.leidosAtletas : [],
           respuestas: Array.isArray(av.respuestas) ? av.respuestas : [],
 
           updatedAt: now,
