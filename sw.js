@@ -6,7 +6,7 @@ try {
   // Ignorar si se carga offline
 }
 
-const CACHE_NAME = 'willilefche-pwa-v1.15.8';
+const CACHE_NAME = 'willilefche-pwa-v1.15.10';
 const CORE_ASSETS = [
   './',
   './index.html',

@@ -8645,24 +8645,48 @@ window.saveCredencialesAtleta = (e, atletaId) => {
 
 
 window.deleteAtleta = (atletaId) => {
-
   const a = Helpers.getAtleta(atletaId);
-
   if (!a) return;
 
-  if (!confirm(`¿Seguro que querés dar de baja a ${a.nombre} ${a.apellido}?`)) return;
+  const nombreCompleto = ((a.nombre || '') + ' ' + (a.apellido || '')).trim();
+  if (!confirm('¿Seguro que querés dar de baja a ' + nombreCompleto + '? Esta acción eliminará su ficha y su usuario.')) return;
 
-  DB.atletas = DB.atletas.filter((x) => x.id !== atletaId);
+  // 1. Registrar baja persistente para evitar reinyección desde INITIAL_DB o Firestore
+  window.DB.atletasBaja = Array.isArray(window.DB.atletasBaja) ? window.DB.atletasBaja : [];
+  const cleanDni = (s) => String(s || '').replace(/\D+/g, '');
+  const bajaRecord = {
+    id: a.id,
+    legacyId: a.legacyId || null,
+    dni: cleanDni(a.dni) || a.dni,
+    usuario: a.usuario || null,
+    nombre: nombreCompleto,
+    fechaBaja: new Date().toISOString()
+  };
 
-  delete DB.planes[atletaId];
+  if (!window.DB.atletasBaja.some((x) => (typeof x === 'string' && x === a.id) || (typeof x === 'object' && (x.id === a.id || (x.dni && bajaRecord.dni && cleanDni(x.dni) === bajaRecord.dni))))) {
+    window.DB.atletasBaja.push(bajaRecord);
+  }
 
-  DB.pagos = DB.pagos.filter((p) => p.atletaId !== atletaId);
+  // 2. Eliminar de las colecciones locales
+  window.DB.atletas = (window.DB.atletas || []).filter((x) => x.id !== atletaId && (!a.legacyId || x.legacyId !== a.legacyId));
 
-  saveDB();
+  if (window.DB.planes) {
+    delete window.DB.planes[atletaId];
+    if (a.legacyId) delete window.DB.planes[a.legacyId];
+  }
 
-  showToast('Atleta dado de baja');
+  window.DB.sesiones = (window.DB.sesiones || []).filter((s) => s.atletaId !== atletaId && (!a.legacyId || s.atletaId !== a.legacyId));
+
+  window.DB.pagos = (window.DB.pagos || []).filter((p) => p.atletaId !== atletaId && (!a.legacyId || p.atletaId !== a.legacyId));
+
+  // 3. Guardar en storage local e iniciar borrado integral en Firestore
+  saveDB({ type: 'atleta_delete', data: atletaId, atleta: a });
+
+  showToast('Atleta ' + nombreCompleto + ' dado de baja');
 
   location.hash = '#/entrenador/atletas';
+
+  renderApp();
 
 };
 
@@ -9071,8 +9095,26 @@ function getConceptosCobroList() {
 
 
 function viewCoachPagos() {
+  // 1. Limpieza automática de duplicados
+  if (typeof window.deduplicarPagos === 'function') {
+    const { limpios, eliminados } = window.deduplicarPagos(DB.pagos);
+    if (eliminados.length > 0) {
+      DB.pagos = limpios;
+      for (const dup of eliminados) {
+        if (window.CloudSync && typeof window.CloudSync.deleteDoc === 'function') {
+          window.CloudSync.deleteDoc('pagos', dup.id);
+        }
+      }
+      saveDB();
+    }
+  }
 
-  // Control automático de vencimientos: si un pago pendiente ya superó la fecha de hoy, pasa a vencido
+  // 2. Generación automática de cuotas mensuales (vencimiento día 15)
+  if (typeof window.asegurarCuotasMensuales === 'function') {
+    window.asegurarCuotasMensuales();
+  }
+
+  // 3. Control automático de vencimientos: si un pago pendiente ya superó la fecha de hoy, pasa a vencido
 
   const hoyStr = DB.hoy || new Date().toISOString().slice(0, 10);
 
@@ -9189,11 +9231,11 @@ function viewCoachPagos() {
       `<div class="flex flex-wrap items-center gap-2">
 
         <button type="button" onclick="openConceptosCobroModal()" class="inline-flex items-center gap-2 rounded-lg border bg-card px-3.5 py-2 text-sm font-semibold hover:bg-muted">
-
-          <i data-lucide="settings-2" class="size-4"></i> Configurar conceptos y valores
-
+          <i data-lucide="settings-2" class="size-4"></i> Conceptos y valores
         </button>
-
+        <button type="button" onclick="openGenerarCuotasMensualesModal()" class="inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-card px-3.5 py-2 text-sm font-semibold text-primary hover:bg-muted">
+          <i data-lucide="calendar-check" class="size-4"></i> Generar cuotas del mes
+        </button>
         <button type="button" onclick="openNuevoCobroModal()" class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-95">
 
           <i data-lucide="plus" class="size-4"></i> Nuevo cobro
@@ -17707,7 +17749,18 @@ window.saveNuevoAtleta = (e) => {
 
   };
 
-
+  // Si este atleta/DNI estaba en la lista de bajas, reactivarlo
+  if (Array.isArray(DB.atletasBaja)) {
+    const cleanDni = (s) => String(s || '').replace(/\D+/g, '');
+    const cleanD = cleanDni(dni);
+    DB.atletasBaja = DB.atletasBaja.filter((b) => {
+      if (!b) return false;
+      if (typeof b === 'string') {
+        return b !== nuevo.id && b !== dni && b !== cleanD && b !== usuario;
+      }
+      return b.id !== nuevo.id && (!b.dni || cleanDni(b.dni) !== cleanD) && (!b.usuario || b.usuario !== usuario);
+    });
+  }
 
   DB.atletas.push(nuevo);
 
@@ -18568,25 +18621,37 @@ window.saveNuevoCobro = (e, editPagoId = '') => {
 
 
   targets.forEach((a, idx) => {
-
-    DB.pagos.push({
-
-      id: `p-${Date.now()}-${idx}`,
-
-      atletaId: a.id,
-
-      concepto,
-
-      monto,
-
-      detalle,
-
-      vencimiento,
-
-      estado: 'pendiente',
-
-    });
-
+    // Protección antiduplicados: si ya existe para este atleta con mismo concepto y vencimiento, actualizar
+    const existente = DB.pagos.find(
+      (p) => p.atletaId === a.id && String(p.concepto || '').trim().toLowerCase() === String(concepto || '').trim().toLowerCase() && p.vencimiento === vencimiento
+    );
+    if (existente) {
+      existente.monto = monto;
+      if (detalle) existente.detalle = detalle;
+      if (window.CloudSync && typeof window.CloudSync.syncPago === 'function') {
+        window.CloudSync.syncPago(existente);
+      }
+    } else {
+      const nuevoP = {
+        id: `p-${Date.now()}-${idx}`,
+        atletaId: a.id,
+        concepto,
+        monto,
+        detalle,
+        vencimiento,
+        estado: 'pendiente',
+        fechaPago: '',
+        medioPago: '',
+        notaPago: '',
+        comprobanteDataUrl: '',
+        motivoRechazo: '',
+        updatedAt: Date.now(),
+      };
+      DB.pagos.push(nuevoP);
+      if (window.CloudSync && typeof window.CloudSync.syncPago === 'function') {
+        window.CloudSync.syncPago(nuevoP);
+      }
+    }
   });
 
 
@@ -19345,5 +19410,110 @@ window.activarNotificacionesPush = async () => {
     showToast('Avisos visuales activados. Podés autorizar notificaciones en los permisos del navegador.', 'info');
   }
 
+  renderApp();
+};
+
+
+window.openGenerarCuotasMensualesModal = () => {
+  const hoyStr = DB.hoy || new Date().toISOString().slice(0, 10);
+  const [currYear, currMonth] = hoyStr.split('-');
+  const catalogo = getConceptosCobroList();
+  const cCuota = catalogo.find((c) => c && (c.id === 'cuota' || (c.nombre || '').toLowerCase().includes('cuota')));
+  const montoActual = (DB.equipo && Number(DB.equipo.valorCuotaMensual)) || (cCuota && Number(cCuota.montoSugerido)) || 7500;
+
+  const meses = [
+    { num: '01', nombre: 'Enero' },
+    { num: '02', nombre: 'Febrero' },
+    { num: '03', nombre: 'Marzo' },
+    { num: '04', nombre: 'Abril' },
+    { num: '05', nombre: 'Mayo' },
+    { num: '06', nombre: 'Junio' },
+    { num: '07', nombre: 'Julio' },
+    { num: '08', nombre: 'Agosto' },
+    { num: '09', nombre: 'Septiembre' },
+    { num: '10', nombre: 'Octubre' },
+    { num: '11', nombre: 'Noviembre' },
+    { num: '12', nombre: 'Diciembre' },
+  ];
+
+  showModalHtml(`
+    <div class="flex items-start justify-between">
+      <div>
+        <h2 class="text-xl font-bold">Generación Automática de Cuotas</h2>
+        <p class="text-sm text-muted-foreground">Generá la cuota mensual para todos los atletas con vencimiento el día 15.</p>
+      </div>
+      <button type="button" onclick="closeModal()" class="text-muted-foreground hover:text-foreground">✕</button>
+    </div>
+
+    <form onsubmit="ejecutarGeneracionCuotas(event)" class="mt-4 space-y-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold">Mes de la cuota</label>
+          <select id="gen-mes" class="h-10 w-full rounded-lg border bg-card px-3 text-sm">
+            ${meses.map((m) => `<option value="${m.num}" ${m.num === currMonth ? 'selected' : ''}>${m.nombre}</option>`).join('')}
+          </select>
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold">Año</label>
+          <input type="number" id="gen-year" value="${currYear}" min="2024" max="2035" class="h-10 w-full rounded-lg border bg-card px-3 text-sm" />
+        </div>
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-semibold">Día de vencimiento</label>
+        <div class="flex items-center gap-2">
+          <input type="text" readonly value="Día 15 del mes seleccionado" class="h-10 w-full rounded-lg border bg-muted/50 px-3 text-sm font-semibold text-primary" />
+        </div>
+        <p class="text-[11px] text-muted-foreground">Regla fijada: el vencimiento de todas las cuotas es el día 15 de cada mes.</p>
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-semibold">Valor de la cuota por atleta ($)</label>
+        <input type="number" id="gen-monto" value="${montoActual}" min="0" step="100" class="h-10 w-full rounded-lg border bg-card px-3 text-sm font-bold" />
+      </div>
+
+      <div class="rounded-xl border bg-primary/5 border-primary/20 p-3.5 space-y-1">
+        <p class="text-xs font-bold text-primary flex items-center gap-1.5">
+          <i data-lucide="shield-check" class="size-4"></i> Protección Antiduplicados Activa
+        </p>
+        <p class="text-xs text-muted-foreground">
+          El sistema verifica atleta por atleta. Si un corredor ya tiene generada la cuota de ese mes, <strong>no se duplica</strong> y conserva su estado actual.
+        </p>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t">
+        <button type="button" onclick="closeModal()" class="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">Cancelar</button>
+        <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-95">
+          <i data-lucide="check-check" class="size-4"></i> Generar cuotas ahora
+        </button>
+      </div>
+    </form>
+  `);
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.ejecutarGeneracionCuotas = (e) => {
+  e.preventDefault();
+  const mes = document.getElementById('gen-mes').value;
+  const year = document.getElementById('gen-year').value;
+  const monto = Number(document.getElementById('gen-monto').value) || 7500;
+
+  DB.equipo = DB.equipo || {};
+  DB.equipo.valorCuotaMensual = monto;
+
+  const catalogo = getConceptosCobroList();
+  const cCuota = catalogo.find((c) => c && (c.id === 'cuota' || (c.nombre || '').toLowerCase().includes('cuota')));
+  if (cCuota) cCuota.montoSugerido = monto;
+
+  const fechaRef = `${year}-${mes}-01`;
+  const generados = typeof window.asegurarCuotasMensuales === 'function' ? window.asegurarCuotasMensuales(fechaRef) : 0;
+
+  closeModal();
+  showToast(
+    generados > 0
+      ? `¡Se generaron ${generados} cuotas para ${mes}/${year} con vencimiento el 15!`
+      : `Las cuotas de ${mes}/${year} ya estaban generadas para todos los atletas. No hubo duplicados.`,
+    'success'
+  );
   renderApp();
 };

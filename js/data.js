@@ -77,13 +77,9 @@ const HOY_DEFAULT = getTodayISO();
 
 
 const DEFAULT_CONCEPTOS_COBRO = [
-
-  { id: 'cuota', nombre: 'Cuota', montoSugerido: 15000, detalleSugerido: 'Cuota mensual' },
-
+  { id: 'cuota', nombre: 'Cuota Mensual', montoSugerido: 7500, detalleSugerido: 'Cuota mensual' },
   { id: 'indumentaria', nombre: 'Indumentaria', montoSugerido: 25000, detalleSugerido: 'Indumentaria del equipo' },
-
   { id: 'viajes-competencias', nombre: 'Viajes y Competencias', montoSugerido: 20000, detalleSugerido: 'Viaje y participación en competencia' },
-
 ];
 
 
@@ -597,7 +593,7 @@ const INITIAL_DB = {
     entrenadorFechaNacimiento: '1980-07-02',
 
     coachUser: 'cristian.torres',
-
+    valorCuotaMensual: 7500,
   },
 
   semanaActual: getCurrentWeekISO(HOY_DEFAULT),
@@ -607,6 +603,8 @@ const INITIAL_DB = {
   conceptosCobro: DEFAULT_CONCEPTOS_COBRO,
 
   disciplinasDisponibles: DEFAULT_DISCIPLINAS,
+
+  atletasBaja: [],
 
   atletas: [
 
@@ -4632,7 +4630,45 @@ function ensureInitialAtletasMerged(dbObj) {
 
   const cleanDni = (s) => String(s || '').replace(/\D+/g, '');
 
+  // Consolidar bajas registradas para jamás volver a inyectar atletas dados de baja
+  const rawBajas = [
+    ...(Array.isArray(dbObj.atletasBaja) ? dbObj.atletasBaja : []),
+    ...(Array.isArray(window.DB?.atletasBaja) ? window.DB.atletasBaja : [])
+  ];
+  const setBajas = new Set();
+  rawBajas.forEach((b) => {
+    if (!b) return;
+    if (typeof b === 'string') {
+      setBajas.add(b.toLowerCase().trim());
+      const cd = cleanDni(b);
+      if (cd) setBajas.add(cd);
+    } else if (typeof b === 'object') {
+      if (b.id) setBajas.add(String(b.id).toLowerCase().trim());
+      if (b.legacyId) setBajas.add(String(b.legacyId).toLowerCase().trim());
+      if (b.dni) {
+        setBajas.add(String(b.dni).toLowerCase().trim());
+        setBajas.add(cleanDni(b.dni));
+      }
+      if (b.usuario) setBajas.add(String(b.usuario).toLowerCase().trim());
+    }
+  });
+
   for (const initA of INITIAL_DB.atletas) {
+
+    const initId = String(initA.id || '').toLowerCase().trim();
+    const initLegacy = String(initA.legacyId || '').toLowerCase().trim();
+    const initDni = cleanDni(initA.dni);
+    const initUser = String(initA.usuario || '').toLowerCase().trim();
+
+    // Si este atleta fue dado de baja, NO reinsertarlo bajo ninguna circunstancia
+    if (
+      (initId && setBajas.has(initId)) ||
+      (initLegacy && setBajas.has(initLegacy)) ||
+      (initDni && setBajas.has(initDni)) ||
+      (initUser && setBajas.has(initUser))
+    ) {
+      continue;
+    }
 
     const existing = dbObj.atletas.find(
 
@@ -5148,9 +5184,46 @@ function loadDB() {
 
         }
 
+        parsed.atletasBaja = Array.isArray(parsed.atletasBaja) ? parsed.atletasBaja : [];
+
         ensureCatalogosActualizados(parsed);
 
         ensureInitialAtletasMerged(parsed);
+
+        // Si hay atletas dados de baja en el registro persistente, filtrarlos
+        if (parsed.atletasBaja.length > 0 && Array.isArray(parsed.atletas)) {
+          const setB = new Set();
+          const cleanDni = (s) => String(s || '').replace(/\D+/g, '');
+          parsed.atletasBaja.forEach((b) => {
+            if (!b) return;
+            if (typeof b === 'string') {
+              setB.add(b.toLowerCase().trim());
+              const cd = cleanDni(b);
+              if (cd) setB.add(cd);
+            } else if (typeof b === 'object') {
+              if (b.id) setB.add(String(b.id).toLowerCase().trim());
+              if (b.legacyId) setB.add(String(b.legacyId).toLowerCase().trim());
+              if (b.dni) {
+                setB.add(String(b.dni).toLowerCase().trim());
+                setB.add(cleanDni(b.dni));
+              }
+              if (b.usuario) setB.add(String(b.usuario).toLowerCase().trim());
+            }
+          });
+          parsed.atletas = parsed.atletas.filter((a) => {
+            if (!a) return false;
+            const aId = String(a.id || '').toLowerCase().trim();
+            const aLeg = String(a.legacyId || '').toLowerCase().trim();
+            const aDni = cleanDni(a.dni);
+            const aUsr = String(a.usuario || '').toLowerCase().trim();
+            return !(
+              (aId && setB.has(aId)) ||
+              (aLeg && setB.has(aLeg)) ||
+              (aDni && setB.has(aDni)) ||
+              (aUsr && setB.has(aUsr))
+            );
+          });
+        }
 
         migrarAtletaIdsAOpace(parsed);
 
@@ -5243,6 +5316,118 @@ function loadDB() {
 
 
 window.DB = loadDB();
+
+/* ---------- Deduplicación y Generación Automática de Cuotas Mensuales ---------- */
+
+function deduplicarPagos(pagosList = window.DB?.pagos) {
+  if (!Array.isArray(pagosList) || pagosList.length === 0) return { limpios: [], eliminados: [] };
+
+  const groups = {};
+  for (const p of pagosList) {
+    if (!p || !p.id) continue;
+    const atletaKey = String(p.atletaId || '').trim();
+    const conceptoKey = String(p.concepto || '').trim().toLowerCase();
+    const vencKey = String(p.vencimiento || '').trim();
+    const key = `${atletaKey}__${conceptoKey}__${vencKey}`;
+    groups[key] = groups[key] || [];
+    groups[key].push(p);
+  }
+
+  const statusWeight = { pagado: 5, informado: 4, rechazado: 3, vencido: 2, pendiente: 1 };
+  const limpios = [];
+  const eliminados = [];
+
+  for (const key of Object.keys(groups)) {
+    const items = groups[key];
+    if (items.length === 1) {
+      limpios.push(items[0]);
+    } else {
+      items.sort((a, b) => {
+        const wA = statusWeight[a.estado] || 0;
+        const wB = statusWeight[b.estado] || 0;
+        if (wA !== wB) return wB - wA;
+        if (a.comprobanteDataUrl && !b.comprobanteDataUrl) return -1;
+        if (!a.comprobanteDataUrl && b.comprobanteDataUrl) return 1;
+        return String(a.id).localeCompare(String(b.id));
+      });
+      limpios.push(items[0]);
+      for (let i = 1; i < items.length; i++) {
+        eliminados.push(items[i]);
+      }
+    }
+  }
+
+  return { limpios, eliminados };
+}
+window.deduplicarPagos = deduplicarPagos;
+
+function asegurarCuotasMensuales(fechaRef = null) {
+  if (!window.DB || !Array.isArray(window.DB.atletas) || window.DB.atletas.length === 0) return 0;
+
+  const hoyStr = fechaRef || window.DB.hoy || new Date().toISOString().slice(0, 10);
+  const [yearStr, monthStr] = hoyStr.split('-');
+  const month = parseInt(monthStr, 10);
+
+  const vencimientoMes = `${yearStr}-${String(monthStr).padStart(2, '0')}-15`;
+  const mesesNombres = [
+    '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+  const mesNombre = mesesNombres[month] || `Mes ${month}`;
+
+  // Monto configurado de la cuota mensual (por defecto $7.500)
+  const catalogo = (typeof getConceptosCobroList === 'function' ? getConceptosCobroList() : window.DB.conceptosCobro) || [];
+  const cCuota = catalogo.find((c) => c && (c.id === 'cuota' || (c.nombre || '').toLowerCase().includes('cuota')));
+  const montoCuota = (window.DB.equipo && Number(window.DB.equipo.valorCuotaMensual)) || (cCuota && Number(cCuota.montoSugerido)) || 7500;
+
+  window.DB.pagos = Array.isArray(window.DB.pagos) ? window.DB.pagos : [];
+  let creados = 0;
+
+  for (const atleta of window.DB.atletas) {
+    if (!atleta || !atleta.id) continue;
+
+    // Verificar si el atleta ya tiene una cuota para este mes y año
+    const yaExiste = window.DB.pagos.some((p) => {
+      if (!p || p.atletaId !== atleta.id) return false;
+      const cNom = String(p.concepto || '').toLowerCase();
+      const esCuota = cNom.includes('cuota');
+      const mismoMes = p.vencimiento === vencimientoMes || (p.vencimiento && p.vencimiento.startsWith(`${yearStr}-${String(monthStr).padStart(2, '0')}`));
+      return esCuota && mismoMes;
+    });
+
+    if (!yaExiste) {
+      const nuevoPago = {
+        id: `cuota-${atleta.id}-${yearStr}-${String(monthStr).padStart(2, '0')}`,
+        atletaId: atleta.id,
+        concepto: 'Cuota Mensual',
+        monto: montoCuota,
+        detalle: `Cuota ${mesNombre} ${yearStr}`,
+        vencimiento: vencimientoMes,
+        estado: hoyStr > vencimientoMes ? 'vencido' : 'pendiente',
+        fechaPago: '',
+        medioPago: '',
+        notaPago: '',
+        comprobanteDataUrl: '',
+        motivoRechazo: '',
+        fechaCreacion: hoyStr,
+        updatedAt: Date.now(),
+      };
+      window.DB.pagos.push(nuevoPago);
+      if (window.CloudSync && typeof window.CloudSync.syncPago === 'function') {
+        window.CloudSync.syncPago(nuevoPago);
+      }
+      creados++;
+    }
+  }
+
+  if (creados > 0) {
+    if (typeof window.saveDB === 'function') window.saveDB();
+    console.log(`[Cuotas Automáticas] Se generaron ${creados} cuotas de ${mesNombre} ${yearStr} ($${montoCuota}) con vencimiento el 15.`);
+  }
+
+  return creados;
+}
+window.asegurarCuotasMensuales = asegurarCuotasMensuales;
 
 
 
@@ -5952,25 +6137,16 @@ const CloudSync = {
 
 
     // 5. Pagos propios del atleta (colección 'pagos' filtrada por atletaId)
-
     const unsubPagos = db.collection('pagos').where('atletaId', '==', atletaId).onSnapshot(
-
       (snap) => {
-
         const pgs = [];
-
         snap.forEach((d) => pgs.push(fixMojibakeInObj(d.data())));
-
-        window.DB.pagos = pgs;
-
+        const { limpios } = deduplicarPagos(pgs);
+        window.DB.pagos = limpios;
         this._saveAtletaCache(atletaId);
-
         this.requestRender();
-
       },
-
       (err) => console.warn('Pagos sub error:', err)
-
     );
 
     this._unsubscribers.push(unsubPagos);
@@ -6133,6 +6309,25 @@ const CloudSync = {
 
           if (cfg.programasTorneos && typeof cfg.programasTorneos === 'object') window.DB.programasTorneos = cfg.programasTorneos;
 
+          if (Array.isArray(cfg.atletasBaja)) {
+            const currentBajas = Array.isArray(window.DB.atletasBaja) ? window.DB.atletasBaja : [];
+            const mergedBajas = [...currentBajas];
+            const cleanD = (s) => String(s || '').replace(/\D+/g, '');
+            cfg.atletasBaja.forEach((b) => {
+              if (!b) return;
+              const exists = mergedBajas.some((x) => {
+                if (typeof x === 'string' && typeof b === 'string') return x === b;
+                const xId = typeof x === 'string' ? x : x.id;
+                const bId = typeof b === 'string' ? b : b.id;
+                const xDni = typeof x === 'object' ? cleanD(x.dni) : cleanD(x);
+                const bDni = typeof b === 'object' ? cleanD(b.dni) : cleanD(b);
+                return (xId && bId && xId === bId) || (xDni && bDni && xDni === bDni);
+              });
+              if (!exists) mergedBajas.push(b);
+            });
+            window.DB.atletasBaja = mergedBajas;
+          }
+
         }
 
         this.setStatus('online', 'Sincronizado');
@@ -6287,15 +6482,53 @@ const CloudSync = {
 
         const atletasArray = Object.values(atletasMap);
 
-        ensureCatalogosActualizados({ atletas: atletasArray });
+        // Filtrar cualquier atleta que haya sido dado de baja
+        const rawBajas = Array.isArray(window.DB?.atletasBaja) ? window.DB.atletasBaja : [];
+        const setBajas = new Set();
+        const cleanDni = (s) => String(s || '').replace(/\D+/g, '');
+        rawBajas.forEach((b) => {
+          if (!b) return;
+          if (typeof b === 'string') {
+            setBajas.add(b.toLowerCase().trim());
+            const cd = cleanDni(b);
+            if (cd) setBajas.add(cd);
+          } else if (typeof b === 'object') {
+            if (b.id) setBajas.add(String(b.id).toLowerCase().trim());
+            if (b.legacyId) setBajas.add(String(b.legacyId).toLowerCase().trim());
+            if (b.dni) {
+              setBajas.add(String(b.dni).toLowerCase().trim());
+              setBajas.add(cleanDni(b.dni));
+            }
+            if (b.usuario) setBajas.add(String(b.usuario).toLowerCase().trim());
+          }
+        });
 
-        ensureInitialAtletasMerged({ atletas: atletasArray });
+        const atletasFiltrados = atletasArray.filter((a) => {
+          if (!a) return false;
+          const aId = String(a.id || '').toLowerCase().trim();
+          const aLeg = String(a.legacyId || '').toLowerCase().trim();
+          const aDni = cleanDni(a.dni);
+          const aUsr = String(a.usuario || '').toLowerCase().trim();
+          if (
+            (aId && setBajas.has(aId)) ||
+            (aLeg && setBajas.has(aLeg)) ||
+            (aDni && setBajas.has(aDni)) ||
+            (aUsr && setBajas.has(aUsr))
+          ) {
+            return false;
+          }
+          return true;
+        });
 
-        migrarAtletaIdsAOpace({ atletas: atletasArray });
+        ensureCatalogosActualizados({ atletas: atletasFiltrados });
 
-        sanitizeDBCredentials({ atletas: atletasArray });
+        ensureInitialAtletasMerged({ atletas: atletasFiltrados, atletasBaja: rawBajas });
 
-        atletasArray.forEach((at) => {
+        migrarAtletaIdsAOpace({ atletas: atletasFiltrados });
+
+        sanitizeDBCredentials({ atletas: atletasFiltrados });
+
+        atletasFiltrados.forEach((at) => {
           if (at) {
             at.objetivos = Array.isArray(at.objetivos) ? at.objetivos : [];
             at.marcas = Array.isArray(at.marcas) ? at.marcas : [];
@@ -6305,7 +6538,7 @@ const CloudSync = {
             at.tiposAtleta = Array.isArray(at.tiposAtleta) ? at.tiposAtleta : [];
           }
         });
-        window.DB.atletas = atletasArray;
+        window.DB.atletas = atletasFiltrados;
 
 
 
@@ -6396,29 +6629,30 @@ const CloudSync = {
 
 
     // 4. Colección de Pagos (pagos/{id})
-
     const unsubPagos = db.collection('pagos').onSnapshot(
-
       (snap) => {
-
         const pgs = [];
-
         snap.forEach((d) => pgs.push(fixMojibakeInObj(d.data())));
-
-        if (pgs.length > 0) window.DB.pagos = pgs;
-
+        if (pgs.length > 0) {
+          const { limpios, eliminados } = deduplicarPagos(pgs);
+          window.DB.pagos = limpios;
+          if (eliminados.length > 0) {
+            console.log(`[Deduplicación Pagos] Se eliminaron ${eliminados.length} pagos duplicados.`);
+            for (const dup of eliminados) {
+              if (window.CloudSync && typeof window.CloudSync.deleteDoc === 'function') {
+                window.CloudSync.deleteDoc('pagos', dup.id);
+              }
+            }
+          }
+        }
+        // Asegurar que las cuotas del mes actual estén generadas con vencimiento el día 15
+        asegurarCuotasMensuales();
         try {
-
           localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
-
         } catch (e) {}
-
         this.requestRender();
-
       },
-
       (err) => console.warn('Aviso pagos:', err)
-
     );
 
     this._unsubscribers.push(unsubPagos);
@@ -6946,6 +7180,8 @@ const CloudSync = {
         distanciasRanking: window.DB.distanciasRanking || DEFAULT_DISTANCIAS_RANKING,
 
         programasTorneos: window.DB.programasTorneos || null,
+
+        atletasBaja: window.DB.atletasBaja || [],
 
         updatedAt: Date.now(),
 
@@ -7593,6 +7829,60 @@ const CloudSync = {
 
   },
 
+  async deleteAtletaCompleto(atletaId) {
+    if (!this.firestore || !atletaId) return;
+    try {
+      console.log(`[CloudSync] Iniciando baja definitiva de atleta en Firestore: ${atletaId}`);
+
+      // 1. Borrar documento del atleta en colección atletas
+      await this.firestore.collection('atletas').doc(atletaId).delete();
+
+      // 2. Borrar subcolección privada de salud si existe
+      try {
+        await this.firestore.collection('atletas').doc(atletaId).collection('privado').doc('salud').delete();
+      } catch (e) {}
+
+      // 3. Borrar planes de entrenamiento asociados
+      try {
+        await this.firestore.collection('planes').doc(atletaId).delete();
+      } catch (e) {}
+
+      // 4. Borrar rankings públicos asociados
+      await this.borrarRankingPublicoDeAtleta(atletaId);
+
+      // 5. Borrar sesiones asociadas al atleta
+      try {
+        const sesSnap = await this.firestore.collection('sesiones').where('atletaId', '==', atletaId).get();
+        if (!sesSnap.empty) {
+          const batchSes = this.firestore.batch();
+          sesSnap.forEach((d) => batchSes.delete(d.ref));
+          await batchSes.commit();
+        }
+      } catch (e) {
+        console.warn('Aviso borrando sesiones de atleta:', e);
+      }
+
+      // 6. Borrar pagos asociados al atleta
+      try {
+        const pagosSnap = await this.firestore.collection('pagos').where('atletaId', '==', atletaId).get();
+        if (!pagosSnap.empty) {
+          const batchPag = this.firestore.batch();
+          pagosSnap.forEach((d) => batchPag.delete(d.ref));
+          await batchPag.commit();
+        }
+      } catch (e) {
+        console.warn('Aviso borrando pagos de atleta:', e);
+      }
+
+      // 7. Sincronizar configuración con atletasBaja actualizado
+      await this.syncConfig();
+
+      console.log(`[CloudSync] Atleta ${atletaId} eliminado completamente de la nube.`);
+    } catch (e) {
+      console.error('Error en deleteAtletaCompleto:', e);
+    }
+  },
+
 };
 
 
@@ -7654,6 +7944,13 @@ function saveDB(immediateSyncEntity = null) {
       } else if (immediateSyncEntity.type === 'aviso_delete' && immediateSyncEntity.data) {
         if (typeof window.CloudSync.deleteDoc === 'function') {
           window.CloudSync.deleteDoc('avisos', immediateSyncEntity.data);
+        }
+      } else if (immediateSyncEntity.type === 'atleta_delete' && immediateSyncEntity.data) {
+        if (typeof window.CloudSync.deleteAtletaCompleto === 'function') {
+          window.CloudSync.deleteAtletaCompleto(immediateSyncEntity.data);
+        } else if (typeof window.CloudSync.deleteDoc === 'function') {
+          window.CloudSync.deleteDoc('atletas', immediateSyncEntity.data);
+          window.CloudSync.deleteDoc('planes', immediateSyncEntity.data);
         }
       } else if (immediateSyncEntity.type === 'competencia' && immediateSyncEntity.data) {
 
@@ -7749,6 +8046,8 @@ function resetDB() {
 }
 
 
+
+window.INITIAL_DB = INITIAL_DB;
 
 window.saveDB = saveDB;
 
