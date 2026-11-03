@@ -1,11 +1,20 @@
 // Service Worker · Willilefche (Escuela Municipal de Valcheta)
-const CACHE_NAME = 'willilefche-pwa-v1.15.3';
+// Soporte de notificaciones push de OneSignal
+try {
+  importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
+} catch (e) {
+  // Ignorar si se carga offline
+}
+
+const CACHE_NAME = 'willilefche-pwa-v1.15.5';
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './OneSignalSDKWorker.js',
   './css/styles.css',
   './js/firebase-config.js',
+  './js/notifications.js',
   './js/data.js',
   './js/auth.js',
   './js/app.js',

@@ -164,6 +164,9 @@ const Auth = {
   setSession(session) {
     try {
       localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      if (window.OneSignalService && typeof window.OneSignalService.vincularUsuario === 'function') {
+        window.OneSignalService.vincularUsuario(session);
+      }
     } catch (e) {
       console.warn('No se pudo guardar la sesión:', e);
     }
@@ -219,6 +222,9 @@ const Auth = {
 
   async logout() {
     try {
+      if (window.OneSignalService && typeof window.OneSignalService.desvincularUsuario === 'function') {
+        window.OneSignalService.desvincularUsuario();
+      }
       localStorage.removeItem(SESSION_KEY);
       if (window.firebase && typeof window.firebase.auth === 'function') {
         await window.firebase.auth().signOut().catch(() => {});
@@ -226,11 +232,17 @@ const Auth = {
       if (window.CloudSync && typeof window.CloudSync.stopSubscriptions === 'function') {
         window.CloudSync.stopSubscriptions();
       }
+      if (typeof window.loadDB === 'function') {
+        window.DB = window.loadDB();
+      }
       if (window.CloudSync && typeof window.CloudSync.dispatchSubscriptionByRole === 'function') {
         window.CloudSync.dispatchSubscriptionByRole();
       }
     } catch (e) {}
     location.hash = '#/ingresar';
+    if (typeof window.renderApp === 'function') {
+      window.renderApp(false);
+    }
   },
 
   /**
@@ -293,6 +305,35 @@ const Auth = {
     }
 
     if (!fbUser) {
+      if (authError && authError.code === 'auth/network-request-failed') {
+        const canLocal = isInitialProvisionAllowed(resolved, rawUser, rawPass);
+        if (canLocal) {
+          const isCoachOrAdmin = resolved.expectedRole === 'admin' || resolved.expectedRole === 'coach';
+          const role = isCoachOrAdmin ? 'coach' : (resolved.expectedRole === 'guardian' ? 'guardian' : 'athlete');
+          const subRole = resolved.expectedRole === 'admin' ? 'admin' : (isCoachOrAdmin ? 'coach' : null);
+          const session = {
+            uid: 'local_' + (resolved.atletaId || resolved.usuario || 'user'),
+            authEmail: resolved.email,
+            role: role,
+            subRole: subRole,
+            usuario: resolved.usuario || rawUser,
+            nombre: resolved.nombre || 'Atleta Willilefche',
+            atletaId: resolved.atletaId || null,
+            loginAt: Date.now(),
+            tokenVerified: false,
+            isOffline: true,
+          };
+          this.setSession(session);
+          let redirect = '#/entrenador';
+          if (session.role === 'athlete' && session.atletaId) {
+            redirect = `#/atleta/${session.atletaId}`;
+          } else if (session.role === 'guardian' && session.atletaId) {
+            redirect = `#/familia/${session.atletaId}`;
+          }
+          return { ok: true, session, redirect };
+        }
+        return { ok: false, error: 'Sin conexión a internet. Verificá tu red y volvé a intentar.' };
+      }
       if (authError && (authError.code === 'auth/wrong-password' || authError.code === 'auth/invalid-credential')) {
         return { ok: false, error: 'Contraseña incorrecta. Verificá tus datos o consultá con el entrenador.' };
       }

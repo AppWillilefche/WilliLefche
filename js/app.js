@@ -2575,6 +2575,7 @@ window.handleLoginSubmit = async (e) => {
     State.loginError = '';
     showToast(`Bienvenido/a, ${res.session.nombre}`);
     location.hash = res.redirect;
+    renderApp();
   } catch (err) {
     console.error('Error al iniciar sesión:', err);
     State.loginError = 'Ocurrió un error al procesar el ingreso. Intentá nuevamente.';
@@ -2604,7 +2605,7 @@ function renderCoachShell(activeSection, contentHtml) {
       return `
         <a
           href="${item.to}"
-          onclick="State.mobileMenuOpen = false"
+          onclick="State.mobileMenuOpen = false; if (location.hash === '${item.to}') { renderApp(false); }"
           class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
             isActive
               ? 'bg-sidebar-primary text-sidebar-primary-foreground font-semibold'
@@ -2744,9 +2745,10 @@ function viewCoachDashboard() {
   const kpis = [
     {
       label: 'Atletas activos',
-      valor: String(DB.atletas.length),
-      sub: `${DB.atletas.filter((a) => a.tutor).length} menores con familia vinculada`,
+      valor: String((DB.atletas || []).length),
+      sub: `${(DB.atletas || []).filter((a) => a && a.tutor).length} menores con familia vinculada`,
       icon: 'users',
+      to: '#/entrenador/atletas',
     },
     {
       label: 'Cumplimiento semanal',
@@ -2760,12 +2762,14 @@ function viewCoachDashboard() {
       sub: `${vencidos.length} pagos vencidos`,
       icon: 'wallet',
       alerta: vencidos.length > 0,
+      to: '#/entrenador/pagos',
     },
     {
       label: 'Próxima competencia',
       valor: proxima ? `${Helpers.diasHasta(proxima.fecha)} días` : '—',
       sub: proxima ? proxima.nombre : 'Sin competencias',
       icon: 'calendar-days',
+      to: '#/entrenador/competencias',
     },
   ];
 
@@ -2807,14 +2811,14 @@ function viewCoachDashboard() {
         ${kpis
           .map(
             (k) => `
-          <div class="rounded-xl border bg-card p-5">
+          <${k.to ? `a href="${k.to}" onclick="if (location.hash === '${k.to}') renderApp(false);"` : 'div'} class="block rounded-xl border bg-card p-5 transition-colors ${k.to ? 'hover:border-primary cursor-pointer' : ''}">
             <div class="flex items-center justify-between">
               <p class="text-sm font-medium text-muted-foreground">${esc(k.label)}</p>
               <i data-lucide="${k.icon}" class="size-5 ${k.alerta ? 'text-destructive' : 'text-primary'}"></i>
             </div>
             <p class="mt-2 font-display text-4xl font-bold tabular-nums">${esc(k.valor)}</p>
             <p class="mt-1 truncate text-sm text-muted-foreground">${esc(k.sub)}</p>
-          </div>
+          </${k.to ? 'a' : 'div'}>
         `
           )
           .join('')}
@@ -2931,13 +2935,14 @@ function viewCoachDashboard() {
 
 function viewCoachAtletas() {
   const categorias = ['Todas', 'Infantiles', 'U12', 'U14', 'U16', 'U18', 'U20', 'Mayores'];
-  const q = State.atletasQuery.trim().toLowerCase();
-  const filtrados = DB.atletas.filter((a) => {
+  const q = String(State.atletasQuery || '').trim().toLowerCase();
+  const filtrados = (DB.atletas || []).filter((a) => {
+    if (!a) return false;
     const matchCat = State.atletasCat === 'Todas' || a.categoria === State.atletasCat;
     const discList = Array.isArray(a.disciplinas) ? a.disciplinas : [];
     const tiposList = Array.isArray(a.tiposAtleta) ? a.tiposAtleta : [];
     const matchDisc = Helpers.atletaPracticaDisciplina(a, State.atletasDisciplina);
-    const matchQuery = `${a.nombre} ${a.apellido} ${a.dni || ''} ${a.usuario || ''} ${tiposList.join(' ')} ${discList.join(' ')} ${a.pruebas || ''}`
+    const matchQuery = `${a.nombre || ''} ${a.apellido || ''} ${a.dni || ''} ${a.usuario || ''} ${tiposList.join(' ')} ${discList.join(' ')} ${a.pruebas || ''}`
       .toLowerCase()
       .includes(q);
     return matchCat && matchDisc && matchQuery;
@@ -2946,7 +2951,7 @@ function viewCoachAtletas() {
   const content = `
     ${renderPageHeader(
       'Atletas · Nómina Oficial',
-      `${DB.atletas.length} atletas registrados en la Escuela Municipal Willilefche`,
+      `${(DB.atletas || []).length} atletas registrados en la Escuela Municipal Willilefche`,
       `
         <button type="button" onclick="openNominaCredencialesModal()" class="inline-flex items-center gap-2 rounded-lg border bg-card px-3.5 py-2 text-sm font-medium hover:bg-muted">
           <i data-lucide="key-round" class="size-4 text-primary"></i> Usuarios y claves
@@ -3046,7 +3051,7 @@ function viewCoachAtletas() {
                         ${renderResumenDisciplinasBadges(a, true)}
                       </div>
                       <div class="mt-3 flex items-center justify-between gap-2 text-sm">
-                        <span class="truncate text-xs text-muted-foreground">${esc(a.objetivos[0]?.texto || 'Ficha activa · Escuela Willilefche')}</span>
+                        <span class="truncate text-xs text-muted-foreground">${esc((Array.isArray(a.objetivos) && a.objetivos[0]?.texto) || 'Ficha activa · Escuela Willilefche')}</span>
                         ${
                           deuda > 0
                             ? `<span class="shrink-0 font-medium tabular-nums ${
@@ -5286,7 +5291,12 @@ function viewCoachAvisos() {
       </form>
 
       <section>
-        <h2 class="mb-3 text-2xl font-bold">Enviados y Conversaciones</h2>
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 class="text-2xl font-bold">Enviados y Conversaciones</h2>
+          <button type="button" onclick="activarNotificacionesPush()" class="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20">
+            <i data-lucide="bell" class="size-3.5"></i> Activar notificaciones
+          </button>
+        </div>
         <ul class="space-y-3">
           ${
             DB.avisos.length === 0
@@ -5392,6 +5402,14 @@ window.enviarAviso = (e) => {
     respuestas: [],
   });
   saveDB();
+  if (window.OneSignalService && typeof window.OneSignalService.enviarPush === 'function') {
+    window.OneSignalService.enviarPush({
+      titulo: `Aviso: ${titulo}`,
+      cuerpo,
+      destinatariosIds,
+      target: destinatariosIds.includes('TODOS') ? 'todos' : 'atletas'
+    });
+  }
   showToast(`Aviso enviado a ${dest}`);
   renderApp();
 };
@@ -5610,6 +5628,15 @@ window.responderMensaje = (e, avisoId, atletaId, rol) => {
   aviso.leidos = 1;
 
   saveDB();
+  if (window.OneSignalService && typeof window.OneSignalService.enviarPush === 'function') {
+    const esEntrenador = rol === 'entrenador';
+    window.OneSignalService.enviarPush({
+      titulo: `Respuesta de ${autorNombre}`,
+      cuerpo: texto,
+      target: esEntrenador ? 'atletas' : 'coach',
+      destinatariosIds: esEntrenador && atleta ? [atleta.id] : []
+    });
+  }
   showToast('Respuesta enviada');
   renderApp();
 };
@@ -5641,6 +5668,13 @@ window.enviarMensajeAtletaAlEntrenador = (e, atletaId) => {
   });
 
   saveDB();
+  if (window.OneSignalService && typeof window.OneSignalService.enviarPush === 'function') {
+    window.OneSignalService.enviarPush({
+      titulo: `Mensaje de ${atleta.nombre} ${atleta.apellido}`,
+      cuerpo,
+      target: 'coach'
+    });
+  }
   showToast('Mensaje enviado a tu entrenador');
   renderApp();
 };
@@ -5954,13 +5988,17 @@ function renderHeroEntrenamientoDia(atleta, sesiones, familia) {
 function viewAtletaPortal(atletaId, modoFamilia = false) {
   const session = typeof Auth.verifyCurrentSession === 'function' ? Auth.verifyCurrentSession() : Auth.getSession();
   const isCoachPreview = session && session.role === 'coach';
-  const atleta = Helpers.getAtleta(atletaId) || DB.atletas[0];
+  const atleta = Helpers.getAtleta(atletaId) || (DB.atletas && DB.atletas[0]) || null;
+  if (!atleta) {
+    return `<div class="min-h-screen bg-background p-8 text-center"><p class="text-muted-foreground">No se encontró información del atleta.</p><button onclick="Auth.logout()" class="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg">Volver a ingresar</button></div>`;
+  }
   const familia = modoFamilia ? atleta.tutor || { nombre: 'Tutor autorizado', vinculo: 'Familia' } : null;
-  const sesiones = Helpers.getPlan(atleta.id);
-  const pagos = Helpers.getPagos(atleta.id);
-  const deuda = pagos.filter((p) => p.estado !== 'pagado').reduce((t, p) => t + p.monto, 0);
-  const proxima = DB.competencias.find((c) => c.inscriptos.includes(atleta.id));
-  const sugeridas = DB.competencias.filter((c) => c.sugeridos.includes(atleta.id));
+  const sesiones = Helpers.getPlan(atleta.id) || [];
+  const pagos = Helpers.getPagos(atleta.id) || [];
+  const deuda = pagos.filter((p) => p && p.estado !== 'pagado').reduce((t, p) => t + (Number(p.monto) || 0), 0);
+  const comps = Array.isArray(DB.competencias) ? DB.competencias : [];
+  const proxima = comps.find((c) => Array.isArray(c.inscriptos) && c.inscriptos.includes(atleta.id));
+  const sugeridas = comps.filter((c) => Array.isArray(c.sugeridos) && c.sugeridos.includes(atleta.id));
   const kmPlan = sesiones.reduce((t, s) => t + (s.distanciaKm || 0), 0);
   const kmHechos = sesiones.filter((s) => s.estado === 'realizado').reduce((t, s) => t + (s.distanciaKm || 0), 0);
 
@@ -6214,7 +6252,12 @@ function viewAtletaPortal(atletaId, modoFamilia = false) {
     tabBody = `
       <div class="grid gap-6 lg:grid-cols-[1fr_24rem]">
         <div class="space-y-3">
-          <h2 class="text-2xl font-bold">Mensajes directos y avisos</h2>
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-2xl font-bold">Mensajes directos y avisos</h2>
+            <button type="button" onclick="activarNotificacionesPush()" class="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20">
+              <i data-lucide="bell" class="size-3.5"></i> Activar notificaciones
+            </button>
+          </div>
           ${
             mensajes.length === 0
               ? `<div class="rounded-xl border border-dashed bg-card p-8 text-center text-sm text-muted-foreground">
@@ -6339,13 +6382,13 @@ function viewAtletaPortal(atletaId, modoFamilia = false) {
                 </div>
                 <p class="mt-1 line-clamp-2 font-semibold">
                   ${esc(
-                    atleta.objetivos[0]
-                      ? `${atleta.objetivos[0].texto}${atleta.objetivos[0].distancia ? ` (${atleta.objetivos[0].distancia})` : ''}`
+                    Array.isArray(atleta.objetivos) && atleta.objetivos[0]
+                      ? `${atleta.objetivos[0].texto || ''}${atleta.objetivos[0].distancia ? ` (${atleta.objetivos[0].distancia})` : ''}`
                       : 'Sin objetivos cargados aún'
                   )}
                 </p>
                 <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/15">
-                  <div class="h-full bg-brand-lime" style="width: ${atleta.objetivos[0]?.progreso || 0}%"></div>
+                  <div class="h-full bg-brand-lime" style="width: ${(Array.isArray(atleta.objetivos) && atleta.objetivos[0]?.progreso) || 0}%"></div>
                 </div>
               </div>
             </div>
@@ -9478,11 +9521,12 @@ window.saveNuevoResultado = (e, atletaId) => {
    ========================================================================== */
 
 function renderApp(preserveSearchFocus = false) {
-  const hash = location.hash || '#/';
-  const path = hash.slice(1) || '/';
-  const session = typeof Auth.verifyCurrentSession === 'function' ? Auth.verifyCurrentSession() : Auth.getSession();
-  const app = document.getElementById('app');
-  if (!app) return;
+  try {
+    const hash = location.hash || '#/';
+    const path = hash.slice(1) || '/';
+    const session = typeof Auth.verifyCurrentSession === 'function' ? Auth.verifyCurrentSession() : Auth.getSession();
+    const app = document.getElementById('app');
+    if (!app) return;
 
   // Guardias de seguridad estrictos por rol
   if (path.startsWith('/entrenador')) {
@@ -9578,14 +9622,32 @@ function renderApp(preserveSearchFocus = false) {
     window.lucide.createIcons();
   }
 
-  if (preserveSearchFocus) {
-    const input = document.getElementById('search-atletas-input');
-    if (input) {
-      input.focus();
-      input.setSelectionRange(input.value.length, input.value.length);
+    if (preserveSearchFocus) {
+      const input = document.getElementById('search-atletas-input');
+      if (input) {
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+      }
+    } else {
+      window.scrollTo(0, 0);
     }
-  } else {
-    window.scrollTo(0, 0);
+  } catch (err) {
+    console.error('Error al renderizar aplicación:', err);
+    const app = document.getElementById('app');
+    if (app) {
+      app.innerHTML = `
+        <div class="min-h-screen bg-background p-6 flex flex-col items-center justify-center text-center">
+          <div class="max-w-md p-6 bg-card rounded-2xl border shadow-sm space-y-4">
+            <h2 class="text-xl font-bold text-destructive">Ocurrió un error al cargar la vista</h2>
+            <p class="text-sm text-muted-foreground">${esc(err && err.message ? err.message : String(err))}</p>
+            <div class="flex gap-2 justify-center pt-2">
+              <button onclick="location.hash='#/entrenador'; renderApp(false)" class="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold">Ir al Panel</button>
+              <button onclick="location.reload()" class="px-4 py-2 border rounded-lg text-sm font-semibold">Recargar página</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
   }
 }
 
@@ -9609,3 +9671,17 @@ if (document.readyState === 'loading') {
   bootApp();
 }
 
+
+window.activarNotificacionesPush = async () => {
+  if (!window.OneSignalService) {
+    showToast('Servicio de notificaciones no disponible');
+    return;
+  }
+  const permiso = await window.OneSignalService.pedirPermiso();
+  if (permiso) {
+    showToast('🔔 ¡Notificaciones activadas con éxito en este dispositivo!');
+  } else {
+    showToast('Permiso no concedido. Podés activarlo en los ajustes del navegador.');
+  }
+  renderApp();
+};
