@@ -6578,6 +6578,10 @@ const CloudSync = {
 
         adherencia: atleta.adherencia || 100,
 
+        objetivos: Array.isArray(atleta.objetivos) ? atleta.objetivos : [],
+        marcas: Array.isArray(atleta.marcas) ? atleta.marcas : [],
+        resultados: Array.isArray(atleta.resultados) ? atleta.resultados : [],
+        evolucion: Array.isArray(atleta.evolucion) ? atleta.evolucion : [],
         updatedAt: now,
 
       });
@@ -7576,6 +7580,8 @@ function saveDB(immediateSyncEntity = null) {
 
       }
 
+    } else if (window.CloudSync && typeof window.CloudSync.schedulePush === 'function') {
+      window.CloudSync.schedulePush(1500);
     }
 
 

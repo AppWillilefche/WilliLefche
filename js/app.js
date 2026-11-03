@@ -3709,7 +3709,7 @@ window.saveDatosPersonalesAtleta = (e, atletaId) => {
       });
     }
   }
-  saveDB();
+  saveDB({ type: 'atleta', data: a });
   showToast(`Datos personales de ${a.nombre} actualizados`);
   renderApp();
 };
@@ -4306,7 +4306,7 @@ window.saveInfoDeportivaAtleta = (e, atletaId) => {
   a.antecedentes = document.getElementById('id-antecedentes').value.trim();
   a.salud = document.getElementById('id-salud').value.trim();
   a.observacionesEntrenador = document.getElementById('id-observaciones').value.trim();
-  saveDB();
+  saveDB({ type: 'atleta', data: a });
   showToast(`Disciplinas, pruebas e información deportiva de ${a.nombre} guardadas`);
   renderApp();
 };
@@ -4315,7 +4315,7 @@ window.deleteExtraField = (atletaId, idx) => {
   const a = Helpers.getAtleta(atletaId);
   if (!a || !Array.isArray(a.extra)) return;
   a.extra.splice(idx, 1);
-  saveDB();
+  saveDB({ type: 'atleta', data: a });
   showToast('Campo adicional eliminado');
   renderApp();
 };
@@ -4330,7 +4330,7 @@ window.saveCredencialesAtleta = (e, atletaId) => {
     a.tutor.usuario = document.getElementById('cred-tuser').value.trim().toLowerCase();
     // Contraseñas de tutores gestionadas por Firebase Auth
   }
-  saveDB();
+  saveDB({ type: 'atleta', data: a });
   showToast(`Credenciales de ${a.nombre} guardadas`);
   renderApp();
 };
@@ -8870,7 +8870,7 @@ window.saveNuevoAtleta = (e) => {
 
   DB.atletas.push(nuevo);
   DB.planes[nuevo.id] = [];
-  saveDB();
+  saveDB({ type: 'atleta', data: nuevo });
   closeModal();
   showToast(`Ficha de ${nombre} ${apellido} creada`);
   location.hash = `#/entrenador/atletas/${nuevo.id}`;
