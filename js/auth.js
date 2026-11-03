@@ -352,6 +352,9 @@ const Auth = {
     if (window.firebase && typeof window.firebase.firestore === 'function') {
       try {
         const db = window.firebase.firestore();
+        if (db && db._delegate && db._delegate._databaseId && window.firebaseConfig && window.firebaseConfig.databaseId) {
+          db._delegate._databaseId.database = window.firebaseConfig.databaseId;
+        }
         db.collection('usuarios').doc(fbUser.uid).set({
           uid: fbUser.uid,
           email: fbUser.email,

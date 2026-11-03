@@ -5048,7 +5048,7 @@ function loadDB() {
 
 
 
-  const isAthleteOnly = Boolean(session && session.role === 'athlete' && session.atletaId);
+  const isAthleteOnly = Boolean(session && (session.role === 'athlete' || session.role === 'atleta' || session.role === 'guardian' || session.role === 'familia') && session.atletaId);
 
 
 
@@ -5345,6 +5345,11 @@ const CloudSync = {
       }
 
       this.firestore = window.firebase.firestore();
+      if (this.firestore && this.firestore._delegate && this.firestore._delegate._databaseId) {
+        if (cfg && cfg.databaseId) {
+          this.firestore._delegate._databaseId.database = cfg.databaseId;
+        }
+      }
 
 
 
@@ -5791,10 +5796,10 @@ const CloudSync = {
         avisos: (window.DB.avisos || []).filter(
 
           (av) =>
-
-            Array.isArray(av.destinatarios) &&
-
-            (av.destinatarios.includes(atletaId) || av.destinatarios.includes('TODOS'))
+            av.atletaId === session.atletaId ||
+            (Array.isArray(av.destinatarios) &&
+              (av.destinatarios.includes(session.atletaId) || av.destinatarios.includes('TODOS'))) ||
+            av.destinatarios === (a ? Helpers.nombreCompleto(a) : '')
 
         ),
 
@@ -5974,24 +5979,23 @@ const CloudSync = {
 
     // 6. Avisos dirigidos al atleta o a 'TODOS'
 
-    const unsubAvisos = db.collection('avisos').where('destinatarios', 'array-contains-any', [atletaId, 'TODOS']).onSnapshot(
-
+    const unsubAvisos = db.collection('avisos').onSnapshot(
       (snap) => {
-
         const avs = [];
-
-        snap.forEach((d) => avs.push(fixMojibakeInObj(d.data())));
-
+        snap.forEach((d) => {
+          const av = fixMojibakeInObj(d.data());
+          av.respuestas = Array.isArray(av.respuestas) ? av.respuestas : [];
+          const esParaMi =
+            (Array.isArray(av.destinatarios) && (av.destinatarios.includes(atletaId) || av.destinatarios.includes('TODOS'))) ||
+            av.atletaId === atletaId ||
+            av.autor === 'atleta';
+          if (esParaMi) avs.push(av);
+        });
         window.DB.avisos = avs;
-
         this._saveAtletaCache(atletaId);
-
         this.requestRender();
-
       },
-
       (err) => console.warn('Avisos sub error:', err)
-
     );
 
     this._unsubscribers.push(unsubAvisos);
@@ -6443,29 +6447,27 @@ const CloudSync = {
 
 
     // 7. Colección de Avisos (avisos/{id})
-
     const unsubAvisos = db.collection('avisos').onSnapshot(
-
       (snap) => {
-
         const avs = [];
-
-        snap.forEach((d) => avs.push(fixMojibakeInObj(d.data())));
-
-        if (avs.length > 0) window.DB.avisos = avs;
-
+        snap.forEach((d) => {
+          const av = fixMojibakeInObj(d.data());
+          av.respuestas = Array.isArray(av.respuestas) ? av.respuestas : [];
+          avs.push(av);
+        });
+        if (avs.length > 0) {
+          window.DB.avisos = avs;
+        } else if (snap.empty && Array.isArray(window.DB.avisos) && window.DB.avisos.length > 0) {
+          for (const av of window.DB.avisos) {
+            this.syncAviso(av);
+          }
+        }
         try {
-
           localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
-
         } catch (e) {}
-
         this.requestRender();
-
       },
-
       (err) => console.warn('Aviso avisos:', err)
-
     );
 
     this._unsubscribers.push(unsubAvisos);
@@ -6749,20 +6751,18 @@ const CloudSync = {
     try {
 
       const avisoDoc = sanitizeForFirestore({
-
         id: aviso.id,
-
         tipo: aviso.tipo || 'General',
-
-        destinatarios: Array.isArray(aviso.destinatarios) ? aviso.destinatarios : ['TODOS'],
-
+        atletaId: aviso.atletaId || null,
+        autor: aviso.autor || 'entrenador',
+        destinatarios: Array.isArray(aviso.destinatarios) ? aviso.destinatarios : [aviso.atletaId || 'TODOS'],
+        destinatariosLabel: aviso.destinatariosLabel || '',
         titulo: aviso.titulo || '',
-
         cuerpo: aviso.cuerpo || '',
-
         fecha: aviso.fecha || '',
-
-        autor: aviso.autor || 'Prof. Cristian Javier Torres',
+        leidos: Number(aviso.leidos) || 0,
+        total: Number(aviso.total) || 1,
+        respuestas: Array.isArray(aviso.respuestas) ? aviso.respuestas : [],
 
         updatedAt: Date.now(),
 
@@ -6776,6 +6776,15 @@ const CloudSync = {
 
     }
 
+  },
+
+  async deleteDoc(colName, docId) {
+    if (!this.firestore || !colName || !docId) return;
+    try {
+      await this.firestore.collection(colName).doc(docId).delete();
+    } catch (e) {
+      console.warn('Error en deleteDoc:', e);
+    }
   },
 
 
@@ -7291,20 +7300,18 @@ const CloudSync = {
         if (!av.id) continue;
 
         addToBatch(db.collection('avisos').doc(av.id), sanitizeForFirestore({
-
           id: av.id,
-
           tipo: av.tipo || 'General',
-
-          destinatarios: Array.isArray(av.destinatarios) ? av.destinatarios : ['TODOS'],
-
+          atletaId: av.atletaId || null,
+          autor: av.autor || 'entrenador',
+          destinatarios: Array.isArray(av.destinatarios) ? av.destinatarios : [av.atletaId || 'TODOS'],
+          destinatariosLabel: av.destinatariosLabel || '',
           titulo: av.titulo || '',
-
           cuerpo: av.cuerpo || '',
-
           fecha: av.fecha || '',
-
-          autor: av.autor || 'Prof. Cristian Javier Torres',
+          leidos: Number(av.leidos) || 0,
+          total: Number(av.total) || 1,
+          respuestas: Array.isArray(av.respuestas) ? av.respuestas : [],
 
           updatedAt: now,
 
@@ -7524,7 +7531,7 @@ function saveDB(immediateSyncEntity = null) {
 
     window.Auth && typeof window.Auth.getSession === 'function' ? window.Auth.getSession() : null;
 
-  const isCoachOrAdmin = Boolean(session && (session.role === 'coach' || session.subRole === 'admin'));
+  const isCoachOrAdmin = Boolean(session && (session.role === 'coach' || session.role === 'entrenador' || session.role === 'admin' || session.role === 'administrador' || session.subRole === 'coach' || session.subRole === 'admin'));
 
 
 
@@ -7564,6 +7571,10 @@ function saveDB(immediateSyncEntity = null) {
 
         window.CloudSync.syncAviso(immediateSyncEntity.data);
 
+      } else if (immediateSyncEntity.type === 'aviso_delete' && immediateSyncEntity.data) {
+        if (typeof window.CloudSync.deleteDoc === 'function') {
+          window.CloudSync.deleteDoc('avisos', immediateSyncEntity.data);
+        }
       } else if (immediateSyncEntity.type === 'competencia' && immediateSyncEntity.data) {
 
         window.CloudSync.syncCompetencia(immediateSyncEntity.data);
@@ -7610,14 +7621,11 @@ function saveDB(immediateSyncEntity = null) {
 
         pagos: (window.DB.pagos || []).filter((pg) => pg.atletaId === session.atletaId),
 
-        avisos: (window.DB.avisos || []).filter(
-
+                avisos: (window.DB.avisos || []).filter(
           (av) =>
-
-            Array.isArray(av.destinatarios) &&
-
-            (av.destinatarios.includes(session.atletaId) || av.destinatarios.includes('TODOS'))
-
+            (Array.isArray(av.destinatarios) && (av.destinatarios.includes(session.atletaId) || av.destinatarios.includes('TODOS'))) ||
+            av.atletaId === session.atletaId ||
+            av.autor === 'atleta'
         ),
 
         competencias: window.DB.competencias || [],
@@ -7634,10 +7642,12 @@ function saveDB(immediateSyncEntity = null) {
 
     // Si el atleta informó un pago, sincronizarlo de inmediato a la nube
 
-    if (immediateSyncEntity && immediateSyncEntity.type === 'pago' && immediateSyncEntity.data && window.CloudSync) {
-
-      window.CloudSync.syncPago(immediateSyncEntity.data);
-
+    if (immediateSyncEntity && window.CloudSync) {
+      if (immediateSyncEntity.type === 'pago' && immediateSyncEntity.data) {
+        window.CloudSync.syncPago(immediateSyncEntity.data);
+      } else if (immediateSyncEntity.type === 'aviso' && immediateSyncEntity.data) {
+        window.CloudSync.syncAviso(immediateSyncEntity.data);
+      }
     }
 
   }
