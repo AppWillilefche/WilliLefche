@@ -606,6 +606,8 @@ const INITIAL_DB = {
 
   atletasBaja: [],
 
+  cuotasCanceladas: [],
+
   atletas: [
 
     {
@@ -4640,16 +4642,9 @@ function ensureInitialAtletasMerged(dbObj) {
     if (!b) return;
     if (typeof b === 'string') {
       setBajas.add(b.toLowerCase().trim());
-      const cd = cleanDni(b);
-      if (cd) setBajas.add(cd);
     } else if (typeof b === 'object') {
       if (b.id) setBajas.add(String(b.id).toLowerCase().trim());
       if (b.legacyId) setBajas.add(String(b.legacyId).toLowerCase().trim());
-      if (b.dni) {
-        setBajas.add(String(b.dni).toLowerCase().trim());
-        setBajas.add(cleanDni(b.dni));
-      }
-      if (b.usuario) setBajas.add(String(b.usuario).toLowerCase().trim());
     }
   });
 
@@ -4657,16 +4652,9 @@ function ensureInitialAtletasMerged(dbObj) {
 
     const initId = String(initA.id || '').toLowerCase().trim();
     const initLegacy = String(initA.legacyId || '').toLowerCase().trim();
-    const initDni = cleanDni(initA.dni);
-    const initUser = String(initA.usuario || '').toLowerCase().trim();
 
-    // Si este atleta fue dado de baja, NO reinsertarlo bajo ninguna circunstancia
-    if (
-      (initId && setBajas.has(initId)) ||
-      (initLegacy && setBajas.has(initLegacy)) ||
-      (initDni && setBajas.has(initDni)) ||
-      (initUser && setBajas.has(initUser))
-    ) {
+    // Si este atleta fue dado de baja por ID específico, NO reinsertarlo
+    if ((initId && setBajas.has(initId)) || (initLegacy && setBajas.has(initLegacy))) {
       continue;
     }
 
@@ -5185,42 +5173,31 @@ function loadDB() {
         }
 
         parsed.atletasBaja = Array.isArray(parsed.atletasBaja) ? parsed.atletasBaja : [];
+        parsed.cuotasCanceladas = Array.isArray(parsed.cuotasCanceladas) ? parsed.cuotasCanceladas : [];
 
         ensureCatalogosActualizados(parsed);
 
         ensureInitialAtletasMerged(parsed);
 
-        // Si hay atletas dados de baja en el registro persistente, filtrarlos
+        // Si hay atletas dados de baja en el registro persistente, filtrarlos por ID exacto
         if (parsed.atletasBaja.length > 0 && Array.isArray(parsed.atletas)) {
           const setB = new Set();
-          const cleanDni = (s) => String(s || '').replace(/\D+/g, '');
           parsed.atletasBaja.forEach((b) => {
             if (!b) return;
             if (typeof b === 'string') {
               setB.add(b.toLowerCase().trim());
-              const cd = cleanDni(b);
-              if (cd) setB.add(cd);
             } else if (typeof b === 'object') {
               if (b.id) setB.add(String(b.id).toLowerCase().trim());
               if (b.legacyId) setB.add(String(b.legacyId).toLowerCase().trim());
-              if (b.dni) {
-                setB.add(String(b.dni).toLowerCase().trim());
-                setB.add(cleanDni(b.dni));
-              }
-              if (b.usuario) setB.add(String(b.usuario).toLowerCase().trim());
             }
           });
           parsed.atletas = parsed.atletas.filter((a) => {
             if (!a) return false;
             const aId = String(a.id || '').toLowerCase().trim();
             const aLeg = String(a.legacyId || '').toLowerCase().trim();
-            const aDni = cleanDni(a.dni);
-            const aUsr = String(a.usuario || '').toLowerCase().trim();
             return !(
               (aId && setB.has(aId)) ||
-              (aLeg && setB.has(aLeg)) ||
-              (aDni && setB.has(aDni)) ||
-              (aUsr && setB.has(aUsr))
+              (aLeg && setB.has(aLeg))
             );
           });
         }
@@ -5361,6 +5338,20 @@ function deduplicarPagos(pagosList = window.DB?.pagos) {
 }
 window.deduplicarPagos = deduplicarPagos;
 
+function esAtletaCorredor(atleta) {
+  if (!atleta) return false;
+  const cat = String(atleta.categoria || '').toLowerCase();
+  const tipo = String(atleta.tipoAtleta || '').toLowerCase();
+  const tipos = Array.isArray(atleta.tiposAtleta) ? atleta.tiposAtleta.map((t) => String(t).toLowerCase()) : [];
+  const disc = Array.isArray(atleta.disciplinas) ? atleta.disciplinas.map((d) => String(d).toLowerCase()) : [];
+  return (
+    cat.includes('corredor') ||
+    tipo.includes('corredor') ||
+    tipos.some((t) => t.includes('corredor')) ||
+    disc.some((d) => d.includes('corredor') || d === 'calle' || d === 'trail')
+  );
+}
+
 function asegurarCuotasMensuales(fechaRef = null) {
   if (!window.DB || !Array.isArray(window.DB.atletas) || window.DB.atletas.length === 0) return 0;
 
@@ -5368,40 +5359,56 @@ function asegurarCuotasMensuales(fechaRef = null) {
   const [yearStr, monthStr] = hoyStr.split('-');
   const month = parseInt(monthStr, 10);
 
-  const vencimientoMes = `${yearStr}-${String(monthStr).padStart(2, '0')}-15`;
+  const ymPrefix = `${yearStr}-${String(monthStr).padStart(2, '0')}`;
+  const vencimientoMes = `${ymPrefix}-15`;
   const mesesNombres = [
     '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
   ];
   const mesNombre = mesesNombres[month] || `Mes ${month}`;
 
-  // Monto configurado de la cuota mensual (por defecto $7.500)
+  // Catálogo de cobros
   const catalogo = (typeof getConceptosCobroList === 'function' ? getConceptosCobroList() : window.DB.conceptosCobro) || [];
   const cCuota = catalogo.find((c) => c && (c.id === 'cuota' || (c.nombre || '').toLowerCase().includes('cuota')));
-  const montoCuota = (window.DB.equipo && Number(window.DB.equipo.valorCuotaMensual)) || (cCuota && Number(cCuota.montoSugerido)) || 7500;
+  const montoCuotaEstandar = (window.DB.equipo && Number(window.DB.equipo.valorCuotaMensual)) || (cCuota && Number(cCuota.montoSugerido)) || 7500;
+
+  const cCorredores = catalogo.find((c) => c && ((c.nombre || '').toLowerCase().includes('corredor') || c.id === 'indumentaria'));
+  const montoCorredores = (cCorredores && Number(cCorredores.montoSugerido)) || 18500;
+  const nombreCorredores = (cCorredores && cCorredores.nombre) || 'Corredores';
 
   window.DB.pagos = Array.isArray(window.DB.pagos) ? window.DB.pagos : [];
+  window.DB.cuotasCanceladas = Array.isArray(window.DB.cuotasCanceladas) ? window.DB.cuotasCanceladas : [];
   let creados = 0;
 
   for (const atleta of window.DB.atletas) {
     if (!atleta || !atleta.id) continue;
 
-    // Verificar si el atleta ya tiene una cuota para este mes y año
+    const cuotaKey = `${atleta.id}-${ymPrefix}`;
+
+    // 1. Si el usuario eliminó explícitamente el cobro de este mes para este atleta, NO regenerarlo
+    if (window.DB.cuotasCanceladas.includes(cuotaKey)) {
+      continue;
+    }
+
+    // 2. Verificar si el atleta YA tiene cualquier cobro para este mes (Cuota Mensual, Corredores o personalizado)
     const yaExiste = window.DB.pagos.some((p) => {
       if (!p || p.atletaId !== atleta.id) return false;
-      const cNom = String(p.concepto || '').toLowerCase();
-      const esCuota = cNom.includes('cuota');
-      const mismoMes = p.vencimiento === vencimientoMes || (p.vencimiento && p.vencimiento.startsWith(`${yearStr}-${String(monthStr).padStart(2, '0')}`));
-      return esCuota && mismoMes;
+      const mismoMes = p.vencimiento === vencimientoMes || (p.vencimiento && p.vencimiento.startsWith(ymPrefix));
+      return Boolean(mismoMes);
     });
 
     if (!yaExiste) {
+      const esCorredor = esAtletaCorredor(atleta);
+      const conceptoFinal = esCorredor ? nombreCorredores : 'Cuota Mensual';
+      const montoFinal = esCorredor ? montoCorredores : montoCuotaEstandar;
+      const detalleFinal = esCorredor ? `Cuota Corredores ${mesNombre} ${yearStr}` : `Cuota ${mesNombre} ${yearStr}`;
+
       const nuevoPago = {
-        id: `cuota-${atleta.id}-${yearStr}-${String(monthStr).padStart(2, '0')}`,
+        id: `cuota-${atleta.id}-${ymPrefix}`,
         atletaId: atleta.id,
-        concepto: 'Cuota Mensual',
-        monto: montoCuota,
-        detalle: `Cuota ${mesNombre} ${yearStr}`,
+        concepto: conceptoFinal,
+        monto: montoFinal,
+        detalle: detalleFinal,
         vencimiento: vencimientoMes,
         estado: hoyStr > vencimientoMes ? 'vencido' : 'pendiente',
         fechaPago: '',
@@ -5422,7 +5429,7 @@ function asegurarCuotasMensuales(fechaRef = null) {
 
   if (creados > 0) {
     if (typeof window.saveDB === 'function') window.saveDB();
-    console.log(`[Cuotas Automáticas] Se generaron ${creados} cuotas de ${mesNombre} ${yearStr} ($${montoCuota}) con vencimiento el 15.`);
+    console.log(`[Cuotas Automáticas] Se generaron ${creados} cuotas de ${mesNombre} ${yearStr} con vencimiento el 15.`);
   }
 
   return creados;
@@ -6309,19 +6316,19 @@ const CloudSync = {
 
           if (cfg.programasTorneos && typeof cfg.programasTorneos === 'object') window.DB.programasTorneos = cfg.programasTorneos;
 
+          if (Array.isArray(cfg.cuotasCanceladas)) {
+            window.DB.cuotasCanceladas = Array.from(new Set([...(window.DB.cuotasCanceladas || []), ...cfg.cuotasCanceladas]));
+          }
+
           if (Array.isArray(cfg.atletasBaja)) {
             const currentBajas = Array.isArray(window.DB.atletasBaja) ? window.DB.atletasBaja : [];
             const mergedBajas = [...currentBajas];
-            const cleanD = (s) => String(s || '').replace(/\D+/g, '');
             cfg.atletasBaja.forEach((b) => {
               if (!b) return;
+              const bId = typeof b === 'string' ? b : b.id;
               const exists = mergedBajas.some((x) => {
-                if (typeof x === 'string' && typeof b === 'string') return x === b;
                 const xId = typeof x === 'string' ? x : x.id;
-                const bId = typeof b === 'string' ? b : b.id;
-                const xDni = typeof x === 'object' ? cleanD(x.dni) : cleanD(x);
-                const bDni = typeof b === 'object' ? cleanD(b.dni) : cleanD(b);
-                return (xId && bId && xId === bId) || (xDni && bDni && xDni === bDni);
+                return xId && bId && xId === bId;
               });
               if (!exists) mergedBajas.push(b);
             });
@@ -6482,24 +6489,16 @@ const CloudSync = {
 
         const atletasArray = Object.values(atletasMap);
 
-        // Filtrar cualquier atleta que haya sido dado de baja
+        // Filtrar cualquier atleta que haya sido dado de baja por ID específico
         const rawBajas = Array.isArray(window.DB?.atletasBaja) ? window.DB.atletasBaja : [];
         const setBajas = new Set();
-        const cleanDni = (s) => String(s || '').replace(/\D+/g, '');
         rawBajas.forEach((b) => {
           if (!b) return;
           if (typeof b === 'string') {
             setBajas.add(b.toLowerCase().trim());
-            const cd = cleanDni(b);
-            if (cd) setBajas.add(cd);
           } else if (typeof b === 'object') {
             if (b.id) setBajas.add(String(b.id).toLowerCase().trim());
             if (b.legacyId) setBajas.add(String(b.legacyId).toLowerCase().trim());
-            if (b.dni) {
-              setBajas.add(String(b.dni).toLowerCase().trim());
-              setBajas.add(cleanDni(b.dni));
-            }
-            if (b.usuario) setBajas.add(String(b.usuario).toLowerCase().trim());
           }
         });
 
@@ -6507,14 +6506,7 @@ const CloudSync = {
           if (!a) return false;
           const aId = String(a.id || '').toLowerCase().trim();
           const aLeg = String(a.legacyId || '').toLowerCase().trim();
-          const aDni = cleanDni(a.dni);
-          const aUsr = String(a.usuario || '').toLowerCase().trim();
-          if (
-            (aId && setBajas.has(aId)) ||
-            (aLeg && setBajas.has(aLeg)) ||
-            (aDni && setBajas.has(aDni)) ||
-            (aUsr && setBajas.has(aUsr))
-          ) {
+          if ((aId && setBajas.has(aId)) || (aLeg && setBajas.has(aLeg))) {
             return false;
           }
           return true;
@@ -7182,6 +7174,8 @@ const CloudSync = {
         programasTorneos: window.DB.programasTorneos || null,
 
         atletasBaja: window.DB.atletasBaja || [],
+
+        cuotasCanceladas: window.DB.cuotasCanceladas || [],
 
         updatedAt: Date.now(),
 
@@ -7944,6 +7938,10 @@ function saveDB(immediateSyncEntity = null) {
       } else if (immediateSyncEntity.type === 'aviso_delete' && immediateSyncEntity.data) {
         if (typeof window.CloudSync.deleteDoc === 'function') {
           window.CloudSync.deleteDoc('avisos', immediateSyncEntity.data);
+        }
+      } else if (immediateSyncEntity.type === 'pago_delete' && immediateSyncEntity.data) {
+        if (typeof window.CloudSync.deleteDoc === 'function') {
+          window.CloudSync.deleteDoc('pagos', immediateSyncEntity.data);
         }
       } else if (immediateSyncEntity.type === 'atleta_delete' && immediateSyncEntity.data) {
         if (typeof window.CloudSync.deleteAtletaCompleto === 'function') {

@@ -8651,19 +8651,16 @@ window.deleteAtleta = (atletaId) => {
   const nombreCompleto = ((a.nombre || '') + ' ' + (a.apellido || '')).trim();
   if (!confirm('¿Seguro que querés dar de baja a ' + nombreCompleto + '? Esta acción eliminará su ficha y su usuario.')) return;
 
-  // 1. Registrar baja persistente para evitar reinyección desde INITIAL_DB o Firestore
+  // 1. Registrar baja persistente por ID exacto para evitar reinyección de este atleta puntual
   window.DB.atletasBaja = Array.isArray(window.DB.atletasBaja) ? window.DB.atletasBaja : [];
-  const cleanDni = (s) => String(s || '').replace(/\D+/g, '');
   const bajaRecord = {
     id: a.id,
     legacyId: a.legacyId || null,
-    dni: cleanDni(a.dni) || a.dni,
-    usuario: a.usuario || null,
     nombre: nombreCompleto,
     fechaBaja: new Date().toISOString()
   };
 
-  if (!window.DB.atletasBaja.some((x) => (typeof x === 'string' && x === a.id) || (typeof x === 'object' && (x.id === a.id || (x.dni && bajaRecord.dni && cleanDni(x.dni) === bajaRecord.dni))))) {
+  if (!window.DB.atletasBaja.some((x) => (typeof x === 'string' && (x === a.id || (a.legacyId && x === a.legacyId))) || (typeof x === 'object' && (x.id === a.id || (a.legacyId && x.legacyId === a.legacyId))))) {
     window.DB.atletasBaja.push(bajaRecord);
   }
 
@@ -10443,18 +10440,29 @@ window.verComprobanteModal = (pagoId) => {
 
 
 window.deletePago = (id) => {
-
+  const p = (window.DB.pagos || []).find((x) => x.id === id);
   if (!confirm('¿Eliminar este cobro?')) return;
 
-  DB.pagos = DB.pagos.filter((p) => p.id !== id);
-
-  if (window.CloudSync && typeof window.CloudSync.deleteDoc === 'function') {
-
-    window.CloudSync.deleteDoc('pagos', id);
-
+  // Registrar en cuotasCanceladas para que asegurarCuotasMensuales no lo regenere automáticamente
+  if (p && p.atletaId && p.vencimiento) {
+    const ym = p.vencimiento.slice(0, 7);
+    const cuotaKey = `${p.atletaId}-${ym}`;
+    window.DB.cuotasCanceladas = Array.isArray(window.DB.cuotasCanceladas) ? window.DB.cuotasCanceladas : [];
+    if (!window.DB.cuotasCanceladas.includes(cuotaKey)) {
+      window.DB.cuotasCanceladas.push(cuotaKey);
+    }
+    if (window.CloudSync && typeof window.CloudSync.syncConfig === 'function') {
+      window.CloudSync.syncConfig();
+    }
   }
 
-  saveDB();
+  DB.pagos = DB.pagos.filter((x) => x.id !== id);
+
+  if (window.CloudSync && typeof window.CloudSync.deleteDoc === 'function') {
+    window.CloudSync.deleteDoc('pagos', id);
+  }
+
+  saveDB({ type: 'pago_delete', data: id });
 
   showToast('Cobro eliminado');
 
