@@ -5893,6 +5893,32 @@ const CloudSync = {
 
     this._unsubscribers.push(unsubRanking);
 
+    // 3. Nómina de atletas pública (permite resolver ingresos de nuevos atletas en cualquier dispositivo o incógnito)
+    const unsubAtletasPublic = db.collection('atletas').onSnapshot(
+      (snap) => {
+        if (!snap.empty) {
+          const cloudAtletas = [];
+          snap.forEach((d) => cloudAtletas.push(fixMojibakeInObj(d.data())));
+          if (cloudAtletas.length > 0) {
+            window.DB.atletas = window.DB.atletas || [];
+            cloudAtletas.forEach((ca) => {
+              const existingIdx = window.DB.atletas.findIndex((a) => a.id === ca.id || (a.legacyId && a.legacyId === ca.legacyId));
+              if (existingIdx >= 0) {
+                window.DB.atletas[existingIdx] = { ...window.DB.atletas[existingIdx], ...ca };
+              } else {
+                window.DB.atletas.push(ca);
+              }
+            });
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
+            } catch (e) {}
+          }
+        }
+      },
+      (err) => console.warn('Aviso atletas público:', err)
+    );
+    this._unsubscribers.push(unsubAtletasPublic);
+
 
 
     // 8. Guía de Atletismo y Programas Oficiales (guias_publicas/atletismo)
@@ -6269,6 +6295,7 @@ const CloudSync = {
     );
 
     this._unsubscribers.push(unsubRanking);
+
 
   },
 
@@ -6804,6 +6831,7 @@ const CloudSync = {
 
     this._unsubscribers.push(unsubRanking);
 
+
   },
 
 
@@ -6863,6 +6891,8 @@ const CloudSync = {
         categoria: atleta.categoria || '',
 
         usuario: atleta.usuario || '',
+
+        dni: atleta.dni || '',
 
         disciplinas: atleta.disciplinas || [],
 

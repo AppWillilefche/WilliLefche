@@ -5115,55 +5115,39 @@ function viewIngresar() {
 
 
 window.handleLoginSubmit = async (e) => {
-
   e.preventDefault();
-
-  const u = document.getElementById('login-user').value;
-
-  const p = document.getElementById('login-pass').value;
-
+  const u = document.getElementById('login-user')?.value || '';
+  const p = document.getElementById('login-pass')?.value || '';
   const btn = e.target.querySelector('button[type="submit"]');
-
+  const originalBtnHtml = btn ? btn.innerHTML : '';
   if (btn) {
-
     btn.disabled = true;
-
     btn.innerHTML = `<span class="inline-flex items-center gap-2"><svg class="size-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Verificando acceso…</span>`;
-
   }
-
   try {
-
     const res = await Auth.login(u, p);
-
     if (!res.ok) {
-
       State.loginError = res.error;
-
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalBtnHtml;
+      }
       renderApp();
-
       return;
-
     }
-
     State.loginError = '';
-
     showToast(`Bienvenido/a, ${res.session.nombre}`);
-
     location.hash = res.redirect;
-
     renderApp();
-
   } catch (err) {
-
     console.error('Error al iniciar sesión:', err);
-
     State.loginError = 'Ocurrió un error al procesar el ingreso. Intentá nuevamente.';
-
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalBtnHtml;
+    }
     renderApp();
-
   }
-
 };
 
 
@@ -17635,9 +17619,9 @@ window.saveNuevoAtleta = (e) => {
 
   const dni = document.getElementById('na-dni').value.trim();
 
-  const usuario = document.getElementById('na-user').value.trim().toLowerCase();
+  const usuario = document.getElementById('na-user').value.trim().toLowerCase().replace(/^@+/, '');
 
-  const password = (document.getElementById('na-pass')?.value || '').trim() || dni;
+  const password = (document.getElementById('na-pass')?.value || '').trim().replace(/\./g, '') || dni.replace(/\./g, '');
 
   const fnac = document.getElementById('na-fnac').value;
 
@@ -17775,6 +17759,39 @@ window.saveNuevoAtleta = (e) => {
   DB.planes[nuevo.id] = [];
 
   saveDB({ type: 'atleta', data: nuevo });
+
+  // Auto-aprovisionar cuenta en Firebase Auth de inmediato para que el atleta pueda ingresar
+  if (window.firebase && typeof window.firebase.auth === 'function' && window.firebaseConfig) {
+    try {
+      const secApp = window.firebase.apps.find((a) => a.name === 'ProvisionerApp') ||
+        window.firebase.initializeApp(window.firebaseConfig, 'ProvisionerApp');
+      const authEmail = `${usuario.replace(/[^a-z0-9._-]/g, '')}@willilefche.app`;
+      const passClean = String(password || dni).replace(/\D+/g, '');
+      const fbPass = passClean.length >= 6 ? passClean : passClean.padEnd(6, '0');
+      secApp.auth().createUserWithEmailAndPassword(authEmail, fbPass)
+        .then(async (cred) => {
+          if (cred && cred.user) {
+            const db = window.firebase.firestore();
+            await db.collection('usuarios').doc(cred.user.uid).set({
+              uid: cred.user.uid,
+              email: authEmail,
+              usuario: usuario,
+              nombre: `${nombre} ${apellido}`,
+              role: 'atleta',
+              atletaId: nuevo.id,
+              dni: dni.replace(/\D+/g, ''),
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            }, { merge: true });
+          }
+        })
+        .catch((err) => {
+          console.log('Provisioner info:', err && err.code);
+        });
+    } catch (err) {
+      console.warn('Pre-aprovisionamiento:', err);
+    }
+  }
 
   closeModal();
 
@@ -19103,80 +19120,59 @@ function renderApp(preserveSearchFocus = false) {
 
 
   // Guardias de seguridad estrictos por rol
-
-  if (path.startsWith('/entrenador')) {
-
-    if (!session) {
-
-      location.hash = '#/ingresar';
-
-      return;
-
-    } else if (session.role === 'athlete') {
-
-      location.hash = `#/atleta/${session.atletaId}`;
-
-      return;
-
-    } else if (session.role === 'guardian') {
-
-      location.hash = `#/familia/${session.atletaId}`;
-
-      return;
-
+  if (session && session.role === 'athlete' && !session.atletaId) {
+    const uNorm = (session.usuario || '').toLowerCase().replace(/^@+/, '').trim();
+    const cleanD = (s) => String(s || '').replace(/\D+/g, '');
+    const myAt = (DB.atletas || []).find((a) => {
+      const aU = (a.usuario || '').toLowerCase().replace(/^@+/, '').trim();
+      return (aU && (aU === uNorm || aU.replace(/\./g, '') === uNorm.replace(/\./g, ''))) ||
+        (cleanD(a.dni) && cleanD(a.dni) === cleanD(uNorm));
+    });
+    if (myAt) {
+      session.atletaId = myAt.id;
+      session.nombre = `${myAt.nombre} ${myAt.apellido}`;
+      Auth.setSession(session);
     }
-
-  } else if (path.startsWith('/atleta')) {
-
-    if (!session) {
-
-      location.hash = '#/ingresar';
-
-      return;
-
-    }
-
-    if (session.role === 'athlete') {
-
-      const requestedId = path.replace('/atleta', '').replace('/', '');
-
-      if (requestedId && requestedId !== session.atletaId) {
-
-        location.hash = `#/atleta/${session.atletaId}`;
-
-        return;
-
-      }
-
-    }
-
-  } else if (path.startsWith('/familia')) {
-
-    if (!session) {
-
-      location.hash = '#/ingresar';
-
-      return;
-
-    }
-
-    if (session.role === 'guardian') {
-
-      const requestedId = path.replace('/familia', '').replace('/', '');
-
-      if (requestedId && requestedId !== session.atletaId) {
-
-        location.hash = `#/familia/${session.atletaId}`;
-
-        return;
-
-      }
-
-    }
-
   }
 
-
+  if (path.startsWith('/entrenador')) {
+    if (!session) {
+      location.hash = '#/ingresar';
+      return;
+    } else if (session.role === 'athlete') {
+      location.hash = session.atletaId ? `#/atleta/${session.atletaId}` : '#/atleta';
+      return;
+    } else if (session.role === 'guardian') {
+      location.hash = session.atletaId ? `#/familia/${session.atletaId}` : '#/familia';
+      return;
+    }
+  } else if (path.startsWith('/atleta')) {
+    if (!session) {
+      location.hash = '#/ingresar';
+      return;
+    }
+    if (session.role === 'athlete') {
+      let requestedId = path.replace('/atleta', '').replace('/', '').trim();
+      if (requestedId === 'null' || requestedId === 'undefined') requestedId = '';
+      if (requestedId && session.atletaId && requestedId !== session.atletaId) {
+        location.hash = `#/atleta/${session.atletaId}`;
+        return;
+      }
+    }
+  } else if (path.startsWith('/familia')) {
+    if (!session) {
+      location.hash = '#/ingresar';
+      return;
+    }
+    if (session.role === 'guardian') {
+      let requestedId = path.replace('/familia', '').replace('/', '').trim();
+      if (requestedId === 'null' || requestedId === 'undefined') requestedId = '';
+      if (requestedId && session.atletaId && requestedId !== session.atletaId) {
+        location.hash = `#/familia/${session.atletaId}`;
+        return;
+      }
+    }
+  }
 
   let html = '';
 
@@ -19258,7 +19254,9 @@ function renderApp(preserveSearchFocus = false) {
 
   } else if (path === '/atleta' || path.startsWith('/atleta/')) {
 
-    const atletaId = path.replace('/atleta', '').replace('/', '') || session?.atletaId || DB.atletas[0]?.id;
+    let cleanAId = path.replace('/atleta', '').replace('/', '').trim();
+    if (cleanAId === 'null' || cleanAId === 'undefined') cleanAId = '';
+    const atletaId = cleanAId || session?.atletaId || DB.atletas[0]?.id;
 
     document.title = 'Mi plan · Willilefche';
 

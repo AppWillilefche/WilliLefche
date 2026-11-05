@@ -17,7 +17,8 @@ function normalizeUserStr(str) {
     .trim()
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/^@+/, '');
 }
 
 function cleanDniStr(str) {
@@ -27,13 +28,14 @@ function cleanDniStr(str) {
 }
 
 /**
- * Convierte cualquier identificador ("alejo.rivas", DNI o usuario) en su email interno seguro.
+ * Convierte cualquier identificador ("alejo.rivas", "@alejo.rivas", DNI o usuario) en su email interno seguro.
  * Los usuarios nunca ven ni necesitan gestionar emails.
  */
 function resolveInternalAuthEmail(userInput) {
-  const raw = String(userInput || '').trim();
+  const raw = String(userInput || '').trim().replace(/^@+/, '');
   const u = normalizeUserStr(raw);
   const uClean = u.replace(/\s+/g, '');
+  const uNoDots = uClean.replace(/\./g, '');
   const uDni = cleanDniStr(raw);
 
   // 1. Cuenta Administrador
@@ -51,6 +53,7 @@ function resolveInternalAuthEmail(userInput) {
   if (
     uClean === 'cristian.torres' ||
     uClean === 'cristiantorres' ||
+    uNoDots === 'cristiantorres' ||
     uClean === 'profesor' ||
     uClean === 'entrenador' ||
     uDni === '27884821'
@@ -70,18 +73,19 @@ function resolveInternalAuthEmail(userInput) {
   for (const a of atletas) {
     const aDni = cleanDniStr(a.dni);
     const aUser = normalizeUserStr(a.usuario || '');
+    const aUserNoDots = aUser.replace(/\./g, '');
     const aAltUsers = Array.isArray(a.altUsuarios) ? a.altUsuarios.map(normalizeUserStr) : [];
 
-    // Coincidencia con Atleta (por usuario, variantes o por DNI)
+    // Coincidencia con Atleta (por usuario, con o sin punto, con o sin @, variantes o por DNI)
     if (
-      (uClean && (uClean === aUser || uClean === aUser.replace(/\./g, '') || aAltUsers.includes(uClean))) ||
+      (uClean && (uClean === aUser || uNoDots === aUserNoDots || aAltUsers.includes(uClean) || aAltUsers.includes(uNoDots))) ||
       (uDni && aDni && uDni === aDni)
     ) {
-      const canonicalUser = (a.usuario || `atleta.${aDni}`).toLowerCase().replace(/[^a-z0-9._-]/g, '');
+      const canonicalUser = (a.usuario || `atleta.${aDni}`).toLowerCase().replace(/^@+/, '').replace(/[^a-z0-9._-]/g, '');
       return {
         email: `${canonicalUser}@willilefche.app`,
         expectedRole: 'athlete',
-        usuario: a.usuario || aDni,
+        usuario: a.usuario ? a.usuario.replace(/^@+/, '') : aDni,
         nombre: `${a.nombre} ${a.apellido}`,
         dni: a.dni,
         atletaId: a.id,
@@ -91,12 +95,13 @@ function resolveInternalAuthEmail(userInput) {
     // Coincidencia con Cuenta Familiar (Tutor de menor)
     if (a.tutor) {
       const tUser = normalizeUserStr(a.tutor.usuario || '');
+      const tUserNoDots = tUser.replace(/\./g, '');
       const tAltUsers = Array.isArray(a.tutor.altUsuarios) ? a.tutor.altUsuarios.map(normalizeUserStr) : [];
 
       if (
-        (uClean && (uClean === tUser || uClean === tUser.replace(/\./g, '') || tAltUsers.includes(uClean)))
+        (uClean && (uClean === tUser || uNoDots === tUserNoDots || tAltUsers.includes(uClean) || tAltUsers.includes(uNoDots)))
       ) {
-        const canonicalTutor = (a.tutor.usuario || `familia.${aDni}`).toLowerCase().replace(/[^a-z0-9._-]/g, '');
+        const canonicalTutor = (a.tutor.usuario || `familia.${aDni}`).toLowerCase().replace(/^@+/, '').replace(/[^a-z0-9._-]/g, '');
         return {
           email: `${canonicalTutor}@willilefche.app`,
           expectedRole: 'guardian',
@@ -110,7 +115,7 @@ function resolveInternalAuthEmail(userInput) {
     }
   }
 
-  // Fallback para usuarios no registrados en la nómina estática
+  // Fallback para usuarios no registrados en la nómina estática (o que ingresan en dispositivo nuevo)
   const safeStr = uClean.replace(/[^a-z0-9._-]/g, '') || (uDni ? `user.${uDni}` : 'user');
   return {
     email: `${safeStr}@willilefche.app`,
@@ -135,15 +140,40 @@ function isInitialProvisionAllowed(resolved, rawUser, rawPass) {
   if (resolved.expectedRole === 'coach') {
     return p === '27884821' || pDni === '27884821' || p === 'Admin123@';
   }
-  if (resolved.expectedRole === 'athlete' && resolved.atletaId) {
-    const a = (window.DB?.atletas || []).find((x) => x.id === resolved.atletaId);
+  if (resolved.expectedRole === 'athlete') {
+    let a = resolved.atletaId ? (window.DB?.atletas || []).find((x) => x.id === resolved.atletaId) : null;
+    if (!a) {
+      const uNorm = normalizeUserStr(rawUser);
+      const uNoDots = uNorm.replace(/\./g, '');
+      a = (window.DB?.atletas || []).find((x) => {
+        const xU = normalizeUserStr(x.usuario || '');
+        return xU === uNorm || xU.replace(/\./g, '') === uNoDots || (cleanDniStr(x.dni) && cleanDniStr(x.dni) === cleanDniStr(rawUser));
+      });
+      if (a) {
+        resolved.atletaId = a.id;
+        resolved.nombre = `${a.nombre} ${a.apellido}`;
+        resolved.dni = a.dni;
+      }
+    }
     if (!a) return false;
     const aDni = cleanDniStr(a.dni);
     // Solo se permite crear la cuenta si la clave inicial coincide exactamente con su DNI oficial sin puntos
     return Boolean(pDni && aDni && pDni === aDni);
   }
-  if (resolved.expectedRole === 'guardian' && resolved.atletaId) {
-    const a = (window.DB?.atletas || []).find((x) => x.id === resolved.atletaId);
+  if (resolved.expectedRole === 'guardian') {
+    let a = resolved.atletaId ? (window.DB?.atletas || []).find((x) => x.id === resolved.atletaId) : null;
+    if (!a) {
+      const uNorm = normalizeUserStr(rawUser);
+      const uNoDots = uNorm.replace(/\./g, '');
+      a = (window.DB?.atletas || []).find((x) => {
+        const tU = normalizeUserStr(x.tutor?.usuario || '');
+        return tU === uNorm || tU.replace(/\./g, '') === uNoDots;
+      });
+      if (a) {
+        resolved.atletaId = a.id;
+        resolved.nombre = a.tutor?.nombre || `${a.nombre} ${a.apellido}`;
+      }
+    }
     if (!a) return false;
     const aDni = cleanDniStr(a.dni);
     const tutorDni = a.tutor?.dni ? cleanDniStr(a.tutor.dni) : null;
@@ -252,7 +282,7 @@ const Auth = {
    * 3. No compara ni almacena contraseñas en texto plano en el cliente.
    */
   async login(userInput, passwordInput) {
-    const rawUser = String(userInput || '').trim();
+    const rawUser = String(userInput || '').trim().replace(/^@+/, '');
     const rawPass = String(passwordInput || '').trim();
 
     if (!rawUser || !rawPass) {
@@ -265,7 +295,9 @@ const Auth = {
 
     const resolved = resolveInternalAuthEmail(rawUser);
     const email = resolved.email;
-    const fbPass = rawPass.length >= 6 ? rawPass : rawPass.padEnd(6, '0');
+    // Si la contraseña fue ingresada con puntos (ej.: DNI 30.284.573), limpiarlos para Firebase Auth
+    const cleanPass = (rawPass.includes('.') && /^[0-9.]+$/.test(rawPass)) ? rawPass.replace(/\./g, '') : rawPass;
+    const fbPass = cleanPass.length >= 6 ? cleanPass : cleanPass.padEnd(6, '0');
     const auth = window.firebase.auth();
 
     let fbUser = null;
@@ -284,13 +316,20 @@ const Auth = {
         code === 'auth/invalid-credential' ||
         code === 'auth/invalid-login-credentials'
       ) {
-        const canAutoProvision = isInitialProvisionAllowed(resolved, rawUser, rawPass);
+        const canAutoProvision = isInitialProvisionAllowed(resolved, rawUser, cleanPass);
         if (canAutoProvision) {
           try {
             const newCred = await auth.createUserWithEmailAndPassword(email, fbPass);
             fbUser = newCred.user;
           } catch (createErr) {
             console.warn('Error al auto-aprovisionar cuenta:', createErr);
+            if (createErr && createErr.code === 'auth/email-already-in-use') {
+              // El usuario ya existe en Firebase Auth pero ingresó una contraseña incorrecta
+              return {
+                ok: false,
+                error: 'Contraseña incorrecta. Verificá tus credenciales o consultá con el entrenador.',
+              };
+            }
             authError = createErr;
           }
         } else {
@@ -306,7 +345,7 @@ const Auth = {
 
     if (!fbUser) {
       if (authError && authError.code === 'auth/network-request-failed') {
-        const canLocal = isInitialProvisionAllowed(resolved, rawUser, rawPass);
+        const canLocal = isInitialProvisionAllowed(resolved, rawUser, cleanPass);
         if (canLocal) {
           const isCoachOrAdmin = resolved.expectedRole === 'admin' || resolved.expectedRole === 'coach';
           const role = isCoachOrAdmin ? 'coach' : (resolved.expectedRole === 'guardian' ? 'guardian' : 'athlete');
@@ -325,10 +364,10 @@ const Auth = {
           };
           this.setSession(session);
           let redirect = '#/entrenador';
-          if (session.role === 'athlete' && session.atletaId) {
-            redirect = `#/atleta/${session.atletaId}`;
-          } else if (session.role === 'guardian' && session.atletaId) {
-            redirect = `#/familia/${session.atletaId}`;
+          if (session.role === 'athlete') {
+            redirect = session.atletaId ? `#/atleta/${session.atletaId}` : '#/atleta';
+          } else if (session.role === 'guardian') {
+            redirect = session.atletaId ? `#/familia/${session.atletaId}` : '#/familia';
           }
           return { ok: true, session, redirect };
         }
@@ -345,10 +384,79 @@ const Auth = {
 
     // 3. Determinar rol y consolidar sesión
     const isCoachOrAdmin = resolved.expectedRole === 'admin' || resolved.expectedRole === 'coach';
-    const role = isCoachOrAdmin ? 'coach' : (resolved.expectedRole === 'guardian' ? 'guardian' : 'athlete');
-    const subRole = resolved.expectedRole === 'admin' ? 'admin' : (isCoachOrAdmin ? 'coach' : null);
+    let role = isCoachOrAdmin ? 'coach' : (resolved.expectedRole === 'guardian' ? 'guardian' : 'athlete');
+    let subRole = resolved.expectedRole === 'admin' ? 'admin' : (isCoachOrAdmin ? 'coach' : null);
+    let atletaId = resolved.atletaId || null;
+    let nombre = resolved.nombre || (isCoachOrAdmin ? 'Prof. Cristian Javier Torres' : 'Atleta Willilefche');
 
-    // Actualizar perfil en 'usuarios/{uid}' en segundo plano (sin bloquear el ingreso del usuario)
+    // 4. Si es atleta o tutor y no teníamos atletaId local (ej: ingresó en incognito o atleta nuevo):
+    // Buscar en Firestore donde fbUser YA ESTÁ autenticado
+    if (!isCoachOrAdmin && (!atletaId || nombre === rawUser)) {
+      const uNorm = normalizeUserStr(rawUser);
+      const uNoDots = uNorm.replace(/\./g, '');
+      const uDni = cleanDniStr(rawUser);
+
+      // Paso 4.1: Buscar en memoria local DB.atletas por si se cargó mientras tanto
+      const localMatch = (window.DB?.atletas || []).find((a) => {
+        const aU = normalizeUserStr(a.usuario || '');
+        const aD = cleanDniStr(a.dni);
+        return aU === uNorm || aU.replace(/\./g, '') === uNoDots || (uDni && aD && aD === uDni);
+      });
+      if (localMatch) {
+        atletaId = localMatch.id;
+        nombre = `${localMatch.nombre} ${localMatch.apellido}`;
+      }
+
+      // Paso 4.2: Consultar Firestore (usuarios/{uid} y colección atletas)
+      if (window.firebase && typeof window.firebase.firestore === 'function') {
+        try {
+          const db = window.firebase.firestore();
+          // Primero leer perfil ya registrado en usuarios/{uid}
+          const uSnap = await db.collection('usuarios').doc(fbUser.uid).get();
+          if (uSnap.exists) {
+            const uData = uSnap.data();
+            if (uData.atletaId && !atletaId) atletaId = uData.atletaId;
+            if (uData.nombre && (!nombre || nombre === rawUser)) nombre = uData.nombre;
+            if (uData.role === 'familia' || uData.role === 'guardian') role = 'guardian';
+          }
+
+          // Si aún no tenemos atletaId, buscar en la colección atletas de Firestore
+          if (!atletaId) {
+            const atletasSnap = await db.collection('atletas').get();
+            atletasSnap.forEach((doc) => {
+              if (atletaId) return;
+              const aData = doc.data();
+              const aU = normalizeUserStr(aData.usuario || '');
+              const aD = cleanDniStr(aData.dni);
+              const tU = aData.tutor ? normalizeUserStr(aData.tutor.usuario || '') : '';
+              if (
+                aU === uNorm ||
+                aU.replace(/\./g, '') === uNoDots ||
+                (uDni && aD && aD === uDni)
+              ) {
+                atletaId = doc.id;
+                nombre = `${aData.nombre} ${aData.apellido}`;
+                role = 'athlete';
+                // Asegurarse de agregar a window.DB.atletas
+                if (window.DB && Array.isArray(window.DB.atletas)) {
+                  if (!window.DB.atletas.some((x) => x.id === doc.id)) {
+                    window.DB.atletas.push({ ...aData, id: doc.id });
+                  }
+                }
+              } else if (tU && (tU === uNorm || tU.replace(/\./g, '') === uNoDots)) {
+                atletaId = doc.id;
+                nombre = aData.tutor.nombre || `${aData.nombre} ${aData.apellido}`;
+                role = 'guardian';
+              }
+            });
+          }
+        } catch (fsErr) {
+          console.warn('Error resolviendo atleta en Firestore:', fsErr);
+        }
+      }
+    }
+
+    // Actualizar perfil en 'usuarios/{uid}' en Firestore
     if (window.firebase && typeof window.firebase.firestore === 'function') {
       try {
         const db = window.firebase.firestore();
@@ -359,9 +467,9 @@ const Auth = {
           uid: fbUser.uid,
           email: fbUser.email,
           usuario: resolved.usuario || rawUser,
-          nombre: resolved.nombre || (isCoachOrAdmin ? 'Prof. Cristian Javier Torres' : 'Atleta Willilefche'),
-          role: isCoachOrAdmin ? (resolved.expectedRole === 'admin' ? 'admin' : 'entrenador') : (resolved.expectedRole === 'guardian' ? 'familia' : 'atleta'),
-          atletaId: resolved.atletaId || null,
+          nombre: nombre,
+          role: isCoachOrAdmin ? (resolved.expectedRole === 'admin' ? 'admin' : 'entrenador') : (role === 'guardian' ? 'familia' : 'atleta'),
+          atletaId: atletaId || null,
           updatedAt: Date.now(),
         }, { merge: true }).catch(() => {});
       } catch (e) {}
@@ -373,8 +481,8 @@ const Auth = {
       role: role,
       subRole: subRole,
       usuario: resolved.usuario || rawUser,
-      nombre: resolved.nombre || (isCoachOrAdmin ? 'Prof. Cristian Javier Torres' : 'Atleta Willilefche'),
-      atletaId: resolved.atletaId || null,
+      nombre: nombre,
+      atletaId: atletaId || null,
       loginAt: Date.now(),
       tokenVerified: true,
     };
@@ -387,10 +495,10 @@ const Auth = {
     }
 
     let redirect = '#/entrenador';
-    if (session.role === 'athlete' && session.atletaId) {
-      redirect = `#/atleta/${session.atletaId}`;
-    } else if (session.role === 'guardian' && session.atletaId) {
-      redirect = `#/familia/${session.atletaId}`;
+    if (session.role === 'athlete') {
+      redirect = session.atletaId ? `#/atleta/${session.atletaId}` : '#/atleta';
+    } else if (session.role === 'guardian') {
+      redirect = session.atletaId ? `#/familia/${session.atletaId}` : '#/familia';
     }
 
     return { ok: true, session, redirect };
