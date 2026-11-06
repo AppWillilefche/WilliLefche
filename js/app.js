@@ -908,86 +908,45 @@ function viewHome() {
 
 
 
-      <section class="relative isolate overflow-hidden bg-ink text-ink-foreground">
-
+      <section class="relative isolate min-h-[480px] overflow-hidden bg-ink text-ink-foreground flex items-center">
+        <!-- Foto de fondo completa con máxima nitidez y enfoque en el equipo -->
         <img
-
-          src="img/hero.png"
-
-          alt="Grupo de corredores entrenando en la pista al atardecer mientras el entrenador toma tiempos"
-
-          class="absolute inset-0 -z-10 size-full object-cover object-[70%_center] opacity-55"
-
+          src="img/hero.png?v=1.15.16"
+          alt="Atletas del equipo de la Escuela Municipal de Atletismo Willilefche en la pista"
+          class="absolute inset-0 -z-10 size-full object-cover object-[82%_center] opacity-100"
         />
 
-        <div class="absolute inset-0 -z-10 bg-gradient-to-r from-ink via-ink/85 to-ink/20"></div>
+        <!-- Degradé suave solo hacia la izquierda para que el texto sea nítido y legible sin tocar a los chicos -->
+        <div class="absolute inset-0 -z-10 bg-gradient-to-t from-ink/95 via-ink/65 to-transparent sm:hidden"></div>
+        <div class="absolute inset-0 -z-10 hidden bg-gradient-to-r from-ink/95 via-ink/75 to-transparent sm:block sm:w-7/12 lg:w-5/12"></div>
 
-        <div class="mx-auto grid max-w-content items-center gap-10 px-4 pb-20 pt-16 sm:px-6 md:pb-28 md:pt-24 lg:grid-cols-[1fr_auto]">
-
-          <div>
-
-            <p class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 px-3 py-1 text-sm text-ink-foreground/80">
-
+        <div class="mx-auto w-full max-w-content px-4 py-14 sm:px-6 md:py-20">
+          <!-- Textos achicados un par de puntos y contenidos a la izquierda para despejar la foto -->
+          <div class="max-w-lg">
+            <p class="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-ink/60 px-3 py-1 text-xs text-ink-foreground/90 backdrop-blur-sm">
               <span class="size-2 rounded-full bg-brand-lime" aria-hidden="true"></span>
-
               ${esc(DB.equipo.nombre)} · ${esc(DB.equipo.sede)}
-
             </p>
-
-            <h1 class="max-w-3xl font-display text-5xl font-extrabold uppercase leading-[0.95] sm:text-7xl">
-
-              <span class="text-brand-lime">Entrenamos hoy,</span>
-
+            <h1 class="font-display text-3xl font-extrabold uppercase leading-[1.02] drop-shadow-md sm:text-4xl lg:text-5xl">
+              <span class="text-brand-lime">Entrenamos hoy,</span><br />
               <span class="text-brand-blue brightness-125">construimos mañana</span>
-
             </h1>
-
-            <p class="mt-6 max-w-xl text-lg text-ink-foreground/80">
-
+            <p class="mt-4 max-w-md text-sm text-ink-foreground/90 drop-shadow-sm sm:text-base">
               La plataforma de la Escuela Municipal de Valcheta: planes de entrenamiento personalizados, fichas de cada atleta, competencias, pagos y comunicación con corredores y familias. Desde el celular o la computadora.
-
             </p>
-
-            <div class="mt-8 flex flex-wrap gap-3">
-
-              <a href="#/ingresar" class="inline-flex h-12 items-center gap-2 rounded-lg bg-primary px-6 text-base font-semibold text-primary-foreground shadow-sm hover:opacity-95">
-
+            <div class="mt-6 flex flex-wrap gap-2.5">
+              <a href="#/ingresar" class="inline-flex h-11 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-md hover:opacity-95 transition-all">
                 Ingresar a mi cuenta <i data-lucide="arrow-right" class="size-4"></i>
-
               </a>
-
-              <a href="#/atletismo" class="inline-flex h-12 items-center gap-2 rounded-lg border border-white/30 bg-transparent px-6 text-base font-semibold text-ink-foreground hover:bg-white/10">
-
-                <i data-lucide="book-open" class="size-4"></i> Guía de Atletismo y Pruebas
-
+              <a href="#/atletismo" class="inline-flex h-11 items-center gap-2 rounded-lg border border-white/25 bg-ink/40 backdrop-blur-sm px-4 text-sm font-semibold text-ink-foreground hover:bg-white/10 transition-all">
+                <i data-lucide="book-open" class="size-4"></i> Guía y Pruebas
               </a>
-
-              <a href="#/rankings" class="inline-flex h-12 items-center gap-2 rounded-lg border border-white/30 bg-transparent px-6 text-base font-semibold text-ink-foreground hover:bg-white/10">
-
-                <i data-lucide="trophy" class="size-4"></i> Ver rankings
-
+              <a href="#/rankings" class="inline-flex h-11 items-center gap-2 rounded-lg border border-white/25 bg-ink/40 backdrop-blur-sm px-4 text-sm font-semibold text-ink-foreground hover:bg-white/10 transition-all">
+                <i data-lucide="trophy" class="size-4"></i> Rankings
               </a>
-
             </div>
-
           </div>
-
-          <img
-
-            src="img/logo-willilefche.jpg"
-
-            alt="Logo de Willilefche, Escuela Municipal de Valcheta"
-
-            width="320"
-
-            height="320"
-
-            class="hidden size-80 rounded-full object-cover shadow-2xl ring-4 ring-white/10 lg:block"
-
-          />
-
         </div>
-
       </section>
 
 
