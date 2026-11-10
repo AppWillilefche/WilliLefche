@@ -504,9 +504,8 @@ function renderSessionCard(sesion, actionHtml = '') {
 
         </div>
 
-        <h3 class="mt-1 text-xl font-bold">${esc(sesion.titulo)}</h3>
-
-        ${sesion.detalle ? `<p class="mt-1 text-sm text-muted-foreground">${esc(sesion.detalle)}</p>` : ''}
+        <h3 class="mt-1 text-xl font-bold">${esc(sesion.titulo || sesion.descripcion || sesion.detalle || (sesion.tipo ? sesion.tipo + ' programado' : 'Entrenamiento'))}</h3>
+        ${(sesion.detalle || sesion.descripcion) ? `<p class="mt-1 text-sm text-muted-foreground">${esc(sesion.detalle || sesion.descripcion)}</p>` : ''}
 
         <dl class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
 
@@ -911,7 +910,7 @@ function viewHome() {
       <section class="relative isolate min-h-[480px] overflow-hidden bg-ink text-ink-foreground flex items-center">
         <!-- Foto de fondo completa con máxima nitidez y enfoque en el equipo -->
         <img
-          src="img/hero.png?v=1.15.16"
+          src="img/hero.png?v=1.15.17"
           alt="Atletas del equipo de la Escuela Municipal de Atletismo Willilefche en la pista"
           class="absolute inset-0 -z-10 size-full object-cover object-[82%_center] opacity-100"
         />
@@ -14833,35 +14832,24 @@ function parseExcelRowsToSessions(rawRows, mondayStart) {
 
 
     // Extraer duración en minutos
-
     let duracionMin = undefined;
-
     if (duracionRaw) {
-
-      const hmMatch = duracionRaw.match(/(\d+)\s*(?:h|hs|hora|horas|:)\s*(\d+)?/i);
-
+      const hmMatch = duracionRaw.match(/^(\d+)\s*(?:h|hs|hora|horas)\s*(\d+)?/i) ||
+                      duracionRaw.match(/(\d+)\s*h\s*(\d+)?/i);
+      const dotHmMatch = duracionRaw.match(/^([0-3])\s*[.:]\s*([0-5]\d)\s*(?:h|hs|hora|horas|min|m)?$/i);
       if (hmMatch) {
-
         duracionMin = Number(hmMatch[1]) * 60 + (hmMatch[2] ? Number(hmMatch[2]) : 0);
-
+      } else if (dotHmMatch) {
+        duracionMin = Number(dotHmMatch[1]) * 60 + Number(dotHmMatch[2]);
       } else {
-
         const numMatch = duracionRaw.match(/(\d+(?:[.,]\d+)?)/);
-
         if (numMatch) {
-
           duracionMin = Math.round(Number(numMatch[1].replace(',', '.')));
-
         }
-
       }
-
     }
 
-
-
     // Extraer distancia en km si figura en actividad u objetivo
-
     let distanciaKm = undefined;
 
     const kmMatch = `${actividad} ${objetivo}`.match(/(\d+(?:[.,]\d+)?)\s*(?:km|kilometros|kilómetros|k)\b/i);
@@ -16229,52 +16217,46 @@ window.confirmImportPlanExcel = () => {
 
 
     // 3. Cargar sesiones en el plan del atleta
-
     let planActual = DB.planes[atleta.id] || [];
-
     if (st.replaceSameDates) {
-
+      // Identificar sesiones viejas para eliminarlas también de Firestore y de DB.sesiones
+      const oldSesiones = planActual.filter((s) => importedDates.has(s.fecha));
+      oldSesiones.forEach((s) => {
+        if (s.id && window.CloudSync && typeof window.CloudSync.deleteDoc === 'function') {
+          window.CloudSync.deleteDoc('sesiones', s.id);
+        }
+      });
+      if (Array.isArray(DB.sesiones)) {
+        DB.sesiones = DB.sesiones.filter((s) => !(s.atletaId === atleta.id && importedDates.has(s.fecha)));
+      }
       planActual = planActual.filter((s) => !importedDates.has(s.fecha));
-
     }
 
-
-
+    const ahora = Date.now();
     const nuevasSesiones = st.parsedSessions.map((s, sIdx) => ({
-
-      id: `xls-${Date.now()}-${aIdx}-${sIdx}`,
-
+      id: `xls-${ahora}-${aIdx}-${sIdx}`,
+      atletaId: atleta.id,
       fecha: s.fecha,
-
       tipo: s.tipo,
-
       intensidad: s.intensidad,
-
       titulo: s.titulo,
-
       detalle: s.detalle,
-
+      descripcion: s.detalle || s.titulo,
       distanciaKm: s.distanciaKm,
-
       duracionMin: s.duracionMin,
-
       series: s.series,
-
       disciplina: discToAssign || undefined,
-
       estado: 'pendiente',
-
+      completada: false,
       modificada: false,
-
+      updatedAt: ahora + sIdx,
     }));
 
-
-
     DB.planes[atleta.id] = [...planActual, ...nuevasSesiones].sort((x, y) =>
-
       (x.fecha || '').localeCompare(y.fecha || '')
-
     );
+    if (!Array.isArray(DB.sesiones)) DB.sesiones = [];
+    DB.sesiones.push(...nuevasSesiones);
 
   });
 

@@ -5338,6 +5338,54 @@ function deduplicarPagos(pagosList = window.DB?.pagos) {
 }
 window.deduplicarPagos = deduplicarPagos;
 
+/* ---------- Deduplicación Automática de Sesiones de Entrenamiento ---------- */
+
+function deduplicarSesiones(sesionesList = window.DB?.sesiones) {
+  if (!Array.isArray(sesionesList) || sesionesList.length === 0) return { limpios: [], eliminados: [] };
+
+  const groups = {};
+  for (const s of sesionesList) {
+    if (!s || !s.id) continue;
+    const atletaKey = String(s.atletaId || '').trim();
+    const fechaKey = String(s.fecha || '').trim();
+    if (!atletaKey || !fechaKey) continue;
+    const key = `${atletaKey}__${fechaKey}`;
+    groups[key] = groups[key] || [];
+    groups[key].push(s);
+  }
+
+  const limpios = [];
+  const eliminados = [];
+
+  for (const key of Object.keys(groups)) {
+    const items = groups[key];
+    if (items.length === 1) {
+      limpios.push(items[0]);
+    } else {
+      // Ordenar para priorizar la sesión con información completa
+      items.sort((a, b) => {
+        const scoreA = (a.titulo ? 10 : 0) + (a.detalle ? 10 : 0) + (a.descripcion ? 5 : 0) + (a.duracionMin ? 2 : 0) + (a.distanciaKm ? 2 : 0) + (a.intensidad ? 2 : 0);
+        const scoreB = (b.titulo ? 10 : 0) + (b.detalle ? 10 : 0) + (b.descripcion ? 5 : 0) + (b.duracionMin ? 2 : 0) + (b.distanciaKm ? 2 : 0) + (b.intensidad ? 2 : 0);
+        if (scoreA !== scoreB) return scoreB - scoreA;
+        return (b.updatedAt || 0) - (a.updatedAt || 0);
+      });
+      limpios.push(items[0]);
+      for (let i = 1; i < items.length; i++) {
+        eliminados.push(items[i]);
+      }
+    }
+  }
+
+  for (const s of sesionesList) {
+    if (s && s.id && (!s.atletaId || !s.fecha)) {
+      if (!limpios.some((x) => x.id === s.id)) limpios.push(s);
+    }
+  }
+
+  return { limpios, eliminados };
+}
+window.deduplicarSesiones = deduplicarSesiones;
+
 function esAtletaCorredor(atleta) {
   if (!atleta) return false;
   const cat = String(atleta.categoria || '').toLowerCase();
@@ -6142,27 +6190,42 @@ const CloudSync = {
     // 4. Sesiones individuales del atleta (colección 'sesiones' filtrada por atletaId)
 
     const unsubSesiones = db.collection('sesiones').where('atletaId', '==', atletaId).onSnapshot(
-
       (snap) => {
-
         const ses = [];
+        snap.forEach((d) => {
+          const s = fixMojibakeInObj(d.data());
+          if (!s.titulo && s.descripcion) s.titulo = s.descripcion;
+          if (!s.detalle && s.descripcion) s.detalle = s.descripcion;
+          if (!s.descripcion && (s.detalle || s.titulo)) s.descripcion = s.detalle || s.titulo;
+          if (!s.estado) s.estado = s.completada ? 'realizado' : 'pendiente';
+          if (s.completada === undefined) s.completada = (s.estado === 'realizado');
+          if (s.distancia && s.distanciaKm === undefined) {
+            const num = parseFloat(String(s.distancia).replace(',', '.'));
+            if (!isNaN(num)) s.distanciaKm = num;
+          }
+          if (s.duracion && s.duracionMin === undefined) {
+            const num = parseInt(String(s.duracion), 10);
+            if (!isNaN(num)) s.duracionMin = num;
+          }
+          ses.push(s);
+        });
 
-        snap.forEach((d) => ses.push(fixMojibakeInObj(d.data())));
+        const { limpios, eliminados } = deduplicarSesiones(ses);
+        if (eliminados.length > 0) {
+          for (const dup of eliminados) {
+            if (dup && dup.id) {
+              db.collection('sesiones').doc(dup.id).delete().catch(() => {});
+            }
+          }
+        }
 
-        window.DB.sesiones = ses;
-
+        window.DB.sesiones = limpios;
         if (!window.DB.planes) window.DB.planes = {};
-
-        window.DB.planes[atletaId] = ses;
-
+        window.DB.planes[atletaId] = limpios;
         this._saveAtletaCache(atletaId);
-
         this.requestRender();
-
       },
-
       (err) => console.warn('Sesiones sub error:', err)
-
     );
 
     this._unsubscribers.push(unsubSesiones);
@@ -6598,49 +6661,53 @@ const CloudSync = {
     // 3. Colección de Sesiones de Entrenamiento (sesiones/{id})
 
     const unsubSesiones = db.collection('sesiones').onSnapshot(
-
       (snap) => {
-
         const ses = [];
-
-        const planesMap = {};
-
         snap.forEach((d) => {
-
           const s = fixMojibakeInObj(d.data());
-
-          ses.push(s);
-
-          if (s.atletaId) {
-
-            if (!planesMap[s.atletaId]) planesMap[s.atletaId] = [];
-
-            planesMap[s.atletaId].push(s);
-
+          if (!s.titulo && s.descripcion) s.titulo = s.descripcion;
+          if (!s.detalle && s.descripcion) s.detalle = s.descripcion;
+          if (!s.descripcion && (s.detalle || s.titulo)) s.descripcion = s.detalle || s.titulo;
+          if (!s.estado) s.estado = s.completada ? 'realizado' : 'pendiente';
+          if (s.completada === undefined) s.completada = (s.estado === 'realizado');
+          if (s.distancia && s.distanciaKm === undefined) {
+            const num = parseFloat(String(s.distancia).replace(',', '.'));
+            if (!isNaN(num)) s.distanciaKm = num;
           }
-
+          if (s.duracion && s.duracionMin === undefined) {
+            const num = parseInt(String(s.duracion), 10);
+            if (!isNaN(num)) s.duracionMin = num;
+          }
+          ses.push(s);
         });
 
-        window.DB.sesiones = ses;
-
-        if (Object.keys(planesMap).length > 0) {
-
-          window.DB.planes = { ...window.DB.planes, ...planesMap };
-
+        const { limpios, eliminados } = deduplicarSesiones(ses);
+        if (eliminados.length > 0) {
+          console.log(`[Deduplicación Sesiones] Se eliminaron ${eliminados.length} sesiones duplicadas en Firestore.`);
+          for (const dup of eliminados) {
+            if (dup && dup.id) {
+              db.collection('sesiones').doc(dup.id).delete().catch(() => {});
+            }
+          }
         }
 
+        window.DB.sesiones = limpios;
+        const planesMap = {};
+        limpios.forEach((s) => {
+          if (s.atletaId) {
+            if (!planesMap[s.atletaId]) planesMap[s.atletaId] = [];
+            planesMap[s.atletaId].push(s);
+          }
+        });
+        if (Object.keys(planesMap).length > 0) {
+          window.DB.planes = { ...window.DB.planes, ...planesMap };
+        }
         try {
-
           localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
-
         } catch (e) {}
-
         this.requestRender();
-
       },
-
       (err) => console.warn('Aviso sesiones:', err)
-
     );
 
     this._unsubscribers.push(unsubSesiones);
@@ -7029,49 +7096,37 @@ const CloudSync = {
 
 
   async syncSesion(sesion) {
-
     if (!this.firestore || !sesion || !sesion.id) return;
-
     try {
-
       const sesionDoc = sanitizeForFirestore({
-
         id: sesion.id,
-
         atletaId: sesion.atletaId,
-
         fecha: sesion.fecha || '',
-
         tipo: sesion.tipo || 'Rodaje',
-
-        descripcion: sesion.descripcion || '',
-
-        distancia: sesion.distancia || '',
-
+        titulo: sesion.titulo || sesion.descripcion || '',
+        detalle: sesion.detalle || sesion.descripcion || '',
+        descripcion: sesion.descripcion || sesion.detalle || sesion.titulo || '',
+        distancia: sesion.distancia || (sesion.distanciaKm ? `${sesion.distanciaKm} km` : ''),
+        distanciaKm: sesion.distanciaKm !== undefined ? Number(sesion.distanciaKm) : null,
+        duracionMin: sesion.duracionMin !== undefined ? Number(sesion.duracionMin) : null,
+        intensidad: sesion.intensidad || null,
+        disciplina: sesion.disciplina || null,
+        series: sesion.series || null,
+        recuperacion: sesion.recuperacion || null,
         objetivo: sesion.objetivo || '',
-
-        completada: Boolean(sesion.completada),
-
+        estado: sesion.estado || (sesion.completada ? 'realizado' : 'pendiente'),
+        completada: Boolean(sesion.completada || sesion.estado === 'realizado'),
+        modificada: Boolean(sesion.modificada),
         tiempoReal: sesion.tiempoReal || '',
-
         distanciaReal: sesion.distanciaReal || '',
-
         sensaciones: sesion.sensaciones || '',
-
         ritmo: sesion.ritmo || '',
-
-        updatedAt: Date.now(),
-
+        updatedAt: sesion.updatedAt || Date.now(),
       });
-
       await this.firestore.collection('sesiones').doc(sesion.id).set(sesionDoc, { merge: true });
-
     } catch (e) {
-
       console.warn('Error en syncSesion:', e);
-
     }
-
   },
 
 
@@ -7438,79 +7493,60 @@ const CloudSync = {
 
 
       // 3. sesiones/{id}
-
       const sesionesToSave = [];
-
       if (window.DB.planes && typeof window.DB.planes === 'object') {
-
         Object.entries(window.DB.planes).forEach(([atletaId, sList]) => {
-
           if (Array.isArray(sList)) {
-
             sList.forEach((s) => {
-
               sesionesToSave.push({
-
                 ...s,
-
                 atletaId: s.atletaId || atletaId,
-
                 id: s.id || `ses_${atletaId}_${s.fecha || Date.now()}`,
-
               });
-
             });
-
           }
-
         });
-
       }
-
       if (Array.isArray(window.DB.sesiones)) {
-
         window.DB.sesiones.forEach((s) => {
-
           if (!sesionesToSave.find((x) => x.id === s.id)) sesionesToSave.push(s);
-
         });
-
       }
-
-      for (const s of sesionesToSave) {
-
+      const { limpios: sesionesLimpias, eliminados: sesionesDuplicadas } = deduplicarSesiones(sesionesToSave);
+      if (sesionesDuplicadas.length > 0) {
+        for (const dup of sesionesDuplicadas) {
+          if (dup && dup.id) {
+            db.collection('sesiones').doc(dup.id).delete().catch(() => {});
+          }
+        }
+      }
+      for (const s of sesionesLimpias) {
         if (!s.id) continue;
-
         addToBatch(db.collection('sesiones').doc(s.id), sanitizeForFirestore({
-
           id: s.id,
-
           atletaId: s.atletaId,
-
           fecha: s.fecha || '',
-
           tipo: s.tipo || 'Rodaje',
-
-          descripcion: s.descripcion || '',
-
-          distancia: s.distancia || '',
-
+          titulo: s.titulo || s.descripcion || '',
+          detalle: s.detalle || s.descripcion || '',
+          descripcion: s.descripcion || s.detalle || s.titulo || '',
+          distancia: s.distancia || (s.distanciaKm ? `${s.distanciaKm} km` : ''),
+          distanciaKm: s.distanciaKm !== undefined ? Number(s.distanciaKm) : null,
+          duracionMin: s.duracionMin !== undefined ? Number(s.duracionMin) : null,
+          intensidad: s.intensidad || null,
+          disciplina: s.disciplina || null,
+          series: s.series || null,
+          recuperacion: s.recuperacion || null,
           objetivo: s.objetivo || '',
-
-          completada: Boolean(s.completada),
-
+          estado: s.estado || (s.completada ? 'realizado' : 'pendiente'),
+          completada: Boolean(s.completada || s.estado === 'realizado'),
+          modificada: Boolean(s.modificada),
           tiempoReal: s.tiempoReal || '',
-
           distanciaReal: s.distanciaReal || '',
-
           sensaciones: s.sensaciones || '',
-
           ritmo: s.ritmo || '',
-
-          updatedAt: now,
-
+          updatedAt: s.updatedAt || now,
         }));
-
       }
 
 
